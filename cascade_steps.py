@@ -20,7 +20,6 @@ class Step(ABC):
     async def setup(self, manager: 'CascadeManager'):
         """Initialize step with cascade manager"""
         self.manager = manager
-        self.manager.register_step(self.name)
         
         # Setup all streams
         for port_name, stream_spec in self.stream_configs.items():
@@ -53,15 +52,16 @@ class TransformStep(Step):
         super().__init__(name, streams, params)
         self.parallel = int(params.get('parallel', 1))
         
-    async def worker(self):
+    async def worker(self, worker_id: int):
         """Individual worker process"""
+        step_id = f"{self.name}:worker{worker_id}"
         while True:
             try:
                 # Mark as idle before waiting
-                self.manager.mark_step_idle(self.name)
+                self.manager.mark_step_idle(step_id)
                 msg = await self.streams['input'].get(self.name)
                 # Mark as active while processing
-                self.manager.mark_step_active(self.name)
+                self.manager.mark_step_active(step_id)
                 
                 # Generate new cascade ID for our output
                 out_cascade_id = msg.derive_cascade_id(self.name)
@@ -86,7 +86,7 @@ class TransformStep(Step):
 
     async def run(self):
         """Spawn parallel workers"""
-        workers = [asyncio.create_task(self.worker()) for _ in range(self.parallel)]
+        workers = [asyncio.create_task(self.worker(i)) for i in range(self.parallel)]
         try:
             await asyncio.gather(*workers)
         except asyncio.CancelledError:

@@ -191,25 +191,22 @@ class CascadeManager:
             for msg in messages:
                 await stream.put(msg, _no_store=True)
 
-    def mark_step_idle(self, step_name: str):
+    def mark_step_idle(self, step_id: str):
         """Mark a step as idle (no more work to do)"""
         if self.debug:
-            print(f"Step {step_name} marked idle")
-        self.idle_steps.add(step_name)
+            print(f"Step {step_id} marked idle")
+        self.steps.add(step_id)  # Track step dynamically
+        self.idle_steps.add(step_id)
         self._check_completion()
 
-    def mark_step_active(self, step_name: str):
+    def mark_step_active(self, step_id: str):
         """Mark a step as active (found work to do)"""
-        if step_name in self.idle_steps:
+        if step_id in self.idle_steps:
             if self.debug:
-                print(f"Step {step_name} marked active")
-            self.idle_steps.discard(step_name)
+                print(f"Step {step_id} marked active")
+            self.idle_steps.discard(step_id)
+        self.steps.add(step_id)  # Track step dynamically
 
-    def register_step(self, step_name: str):
-        """Register a step with the manager"""
-        print(f"Registering step: {step_name}")
-        self.steps.add(step_name)
-        
     def _check_completion(self):
         """Check if all steps are idle and all queues are empty"""
         all_idle = len(self.idle_steps) == len(self.steps)
