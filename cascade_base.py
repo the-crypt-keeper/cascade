@@ -237,6 +237,7 @@ class CascadeManager:
             
     async def wait_for_completion(self):
         """Wait for pipeline completion"""
+        print("Waiting for pipeline to complete.")
         await self._completion_event.wait()
 
     async def unroll(self, msg: Message) -> Dict[str, Any]:
