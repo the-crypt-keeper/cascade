@@ -64,11 +64,31 @@ uv run main.py example-simple.yaml
 
 ## Step Implementation
 
-Cascade currently provides three core step types:
+Cascade provides three base step types that can be extended to create custom processing steps. All steps support common configuration options:
 
-### StepIdeaSource (SourceStep)
+- **name**: Unique identifier for the step
+- **streams**: Input/output stream configuration
+- **params**: Step-specific parameters
 
-Generates initial data by sampling from configured sources:
+### Source Steps
+
+Source steps generate initial data into the pipeline. They have no input streams and one or more output streams.
+
+Base configuration:
+```yaml
+steps:
+  my_source:
+    class: cascade_steps.MySourceStep
+    streams:
+      output: output_stream
+    params:
+      count: 5  # Number of items to generate
+```
+
+Available implementations:
+
+#### StepIdeaSource
+Generates data by sampling from configured sources:
 
 ```yaml
 steps:
@@ -79,29 +99,34 @@ steps:
     params:
       count: 5
       schema:
-        random_basic_words: 
-            sample: $assets.basic_words
-            count: 3
-        random_advanced_words:
-            sample: $assets.advanced_words
-            count: 3
+        random_words: 
+          sample: $assets.word_list
+          count: 3
         technique: 
-            sample: $assets.world_techniques
-            count: 1
+          sample: $assets.techniques
+          count: 1
 ```
 
-This will produce output like:
-```python
-{
-    'random_basic_words': ['cat', 'dog', 'house'],
-    'random_advanced_words': ['ephemeral', 'serendipity', 'mellifluous'],
-    'technique': {'title': 'Historical Analog Approach', ...}  # Single item since count=1
-}
+### Transform Steps
+
+Transform steps process input data and produce transformed output. They support parallel processing through the `parallel` parameter.
+
+Base configuration:
+```yaml
+steps:
+  my_transform:
+    class: cascade_steps.MyTransformStep
+    streams:
+      input: input_stream:1  # :1 specifies consumer weight
+      output: output_stream
+    params:
+      parallel: 2  # Number of parallel workers
 ```
 
-### StepExpandTemplate (TransformStep)
+Available implementations:
 
-Expands a Jinja2 template using input data:
+#### StepExpandTemplate
+Expands Jinja2 templates using input data:
 
 ```yaml
 steps:
@@ -111,99 +136,83 @@ steps:
       input: vars:1
       output: prompts
     params:
-      template: |-
-        Let's create something using {{technique.title}}.
-        Our inspiration words are: {{random_basic_words|join(', ')}}.
+      template: "Template using {{variable}}"
+      parallel: 2
 ```
 
-The template has access to all keys from the input dictionary and standard Jinja2 filters.
-
-### StepLLMCompletion (TransformStep)
-
-Processes input through a language model:
+#### StepLLMCompletion
+Processes text through language models:
 
 ```yaml
 steps:
-  generate_response:
+  generate:
     class: cascade_steps.StepLLMCompletion
     streams:
       input: prompts:1
       output: responses
     params:
-      model: "mistral"  # Required: LLM model to use
-      tokenizer: "mistral"  # Optional: tokenizer name
-      sampler:  # Optional sampling parameters
+      model: "mistral"
+      tokenizer: "mistral"  # Optional
+      parallel: 2
+      sampler:
         temperature: 0.7
         max_tokens: 1024
 ```
 
-The step supports:
-- Custom model selection
-- Optional tokenizer configuration
-- Configurable sampling parameters
-- Automatic chat template application when using tokenizers
-
-### StepJSONParser (Step)
-
-Parses JSON from input text and provides flexible output options:
+#### StepJSONParser
+Parses and transforms JSON data:
 
 ```yaml
 steps:
   parse_json:
     class: cascade_steps.StepJSONParser
     streams:
-      input: responses
+      input: responses:1
       output: parsed
     params:
-      first_key: true  # Optional: return only the first key's value
-      explode_list: "items"  # Optional: split list field into separate outputs
-      explode_keys: ["field1", "field2"]  # Optional: output specific keys separately
+      first_key: true  # Extract first key's value
+      explode_list: "items"  # Split list into separate outputs
+      explode_keys: ["key1", "key2"]  # Output keys separately
+      parallel: 2
 ```
 
-The step supports several parsing modes:
+### Sink Steps
 
-- **Basic JSON parsing**: By default, parses the first valid JSON object found in the input text
-- **First Key Extraction**: With `first_key: true`, returns only the value of the first key in the JSON object
-- **List Explosion**: With `explode_list: "field_name"`, splits a list field into separate output messages
-- **Key Explosion**: With `explode_keys: ["key1", "key2"]`, outputs specified fields as separate messages
+Sink steps consume data from the pipeline and perform final processing. They have one or more input streams but no outputs.
 
-Example input/output:
-
-```python
-# Input text containing JSON
-'''Some text before {"items": ["a", "b", "c"], "other": "data"} and after'''
-
-# With explode_list: "items" produces three outputs:
-"a"  # cascade_id: input_step:count=0/parse_json:index=0
-"b"  # cascade_id: input_step:count=0/parse_json:index=1
-"c"  # cascade_id: input_step:count=0/parse_json:index=2
+Base configuration:
+```yaml
+steps:
+  my_sink:
+    class: cascade_steps.MySinkStep
+    streams:
+      input: input_stream:1
+    params:
+      output_dir: "output/"
 ```
 
-### StepJSONSink (SinkStep)
+Available implementations:
 
-Exports the complete history of a cascade to a JSON file:
+#### StepJSONSink
+Exports complete cascade histories to JSON files:
 
 ```yaml
 steps:
   export_json:
     class: cascade_steps.StepJSONSink
     streams:
-      input: prompts:1
+      input: final_output:1
     params:
-      output_dir: output/scenarios
+      output_dir: output/results
 ```
 
-Creates files named with MD5 hashes of cascade IDs containing:
+Output format:
 ```json
 {
-  "cascade_id": "generate_scenario:count=0/expand_template",
+  "cascade_id": "source:count=0/transform",
   "history": {
-    "generate_scenario": {
-      "random_basic_words": ["cat", "dog", "house"],
-      "random_advanced_words": ["ephemeral", "serendipity", "mellifluous"],
-      "technique": {"title": "Historical Analog Approach", ...}
-    },
-    "expand_template": "Let's create something using Historical Analog Approach..."
+    "source": {"generated": "data"},
+    "transform": "processed result"
   }
 }
 ```
