@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import asyncio
 import random
+import requests
+import time
 from cascade_base import *
 from jinja2 import Template
 from pathlib import Path
@@ -307,6 +309,46 @@ class StepJSONParser(Step):
                 break
             except Exception as e:
                 print(f"Error in {self.name}: {e}")
+
+class StepText2Image(TransformStep):
+    async def _setup(self):
+        """Initialize image generation parameters"""
+        if 'api_url' not in self.params:
+            raise ValueError(f"StepText2Image {self.name} requires 'api_url' parameter")
+        
+        self.api_url = self.params['api_url']
+        self.width = int(self.params.get('width', 512))
+        self.height = int(self.params.get('height', 512))
+        self.steps = int(self.params.get('steps', 20))
+
+    async def process(self, prompt: str) -> Dict[str, Any]:
+        """Generate image from text prompt"""
+        payload = {
+            "prompt": prompt,
+            "steps": self.steps,
+            "width": self.width,
+            "height": self.height
+        }
+        
+        response = requests.post(
+            url=f"{self.api_url}/sdapi/v1/txt2img",
+            json=payload
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"Image API request failed with status code {response.status_code}")
+
+        result = response.json()
+        
+        return {
+            'image': result['images'][0],
+            'metadata': {
+                'timestamp': time.time(),
+                'width': self.width,
+                'height': self.height,
+                'steps': self.steps
+            }
+        }
 
 class StepJSONSink(SinkStep):
     async def _setup(self):
