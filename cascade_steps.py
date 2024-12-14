@@ -217,6 +217,48 @@ class StepLLMCompletion(TransformStep):
             return answers[0]
         return None
 
+class StepJSONParser(TransformStep):
+    async def _setup(self):
+        """Initialize parser parameters"""
+        self.first_key = self.params.get('first_key', False)
+        self.explode_list = self.params.get('explode_list')
+        self.explode_keys = self.params.get('explode_keys')
+
+    async def process(self, data: Any) -> Any:
+        """Parse JSON string and apply transformations"""
+        if not isinstance(data, str):
+            return None
+            
+        # Find JSON boundaries
+        sidx = data.find('{')
+        eidx = data.rfind('}')
+        
+        if sidx == -1 or eidx == -1:
+            return None
+            
+        try:
+            result = json.loads(data[sidx:eidx+1])
+        except json.JSONDecodeError:
+            print(f"JSON parse failed in {self.name}: {data}")
+            return None
+
+        # Handle first_key option
+        if self.first_key and isinstance(result, dict) and len(result) > 0:
+            first_key = next(iter(result))
+            return result[first_key]
+
+        # Handle explode_list option
+        if self.explode_list and isinstance(result, dict):
+            target_list = result.get(self.explode_list)
+            if isinstance(target_list, list):
+                return target_list
+
+        # Handle explode_keys option
+        if self.explode_keys and isinstance(result, dict):
+            return {k: result[k] for k in self.explode_keys if k in result}
+
+        return result
+
 class StepJSONSink(SinkStep):
     async def _setup(self):
         # Ensure output directory exists
