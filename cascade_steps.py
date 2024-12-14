@@ -217,47 +217,81 @@ class StepLLMCompletion(TransformStep):
             return answers[0]
         return None
 
-class StepJSONParser(TransformStep):
+class StepJSONParser(Step):
     async def _setup(self):
         """Initialize parser parameters"""
         self.first_key = self.params.get('first_key', False)
         self.explode_list = self.params.get('explode_list')
         self.explode_keys = self.params.get('explode_keys')
 
-    async def process(self, data: Any) -> Any:
-        """Parse JSON string and apply transformations"""
-        if not isinstance(data, str):
-            return None
-            
-        # Find JSON boundaries
-        sidx = data.find('{')
-        eidx = data.rfind('}')
-        
-        if sidx == -1 or eidx == -1:
-            return None
-            
-        try:
-            result = json.loads(data[sidx:eidx+1])
-        except json.JSONDecodeError:
-            print(f"JSON parse failed in {self.name}: {data}")
-            return None
+    async def run(self):
+        """Main processing loop"""
+        while True:
+            try:
+                # Mark as idle before waiting
+                self.manager.mark_step_idle(self.name)
+                msg = await self.streams['input'].get(self.name)
+                # Mark as active while processing
+                self.manager.mark_step_active(self.name)
 
-        # Handle first_key option
-        if self.first_key and isinstance(result, dict) and len(result) > 0:
-            first_key = next(iter(result))
-            return result[first_key]
+                data = msg.payload
+                if not isinstance(data, str):
+                    continue
 
-        # Handle explode_list option
-        if self.explode_list and isinstance(result, dict):
-            target_list = result.get(self.explode_list)
-            if isinstance(target_list, list):
-                return target_list
+                # Find JSON boundaries
+                sidx = data.find('{')
+                eidx = data.rfind('}')
+                
+                if sidx == -1 or eidx == -1:
+                    continue
+                    
+                try:
+                    result = json.loads(data[sidx:eidx+1])
+                except json.JSONDecodeError:
+                    print(f"JSON parse failed in {self.name}: {data}")
+                    continue
 
-        # Handle explode_keys option
-        if self.explode_keys and isinstance(result, dict):
-            return {k: result[k] for k in self.explode_keys if k in result}
+                outputs = []
+                
+                # Handle first_key option
+                if self.first_key and isinstance(result, dict) and len(result) > 0:
+                    first_key = next(iter(result))
+                    outputs.append(result[first_key])
+                
+                # Handle explode_list option
+                elif self.explode_list and isinstance(result, dict):
+                    target_list = result.get(self.explode_list)
+                    if isinstance(target_list, list):
+                        outputs.extend(target_list)
+                
+                # Handle explode_keys option
+                elif self.explode_keys and isinstance(result, dict):
+                    for key in self.explode_keys:
+                        if key in result:
+                            outputs.append(result[key])
+                
+                # Default case - return full result
+                else:
+                    outputs.append(result)
 
-        return result
+                # Output each result as a separate message
+                for i, output in enumerate(outputs):
+                    # Generate unique cascade ID for each output
+                    out_cascade_id = msg.derive_cascade_id(f"{self.name}:{i}")
+                    
+                    # Check if we've already processed this
+                    if not await self.streams['output'].check_exists(out_cascade_id):
+                        out_msg = Message(
+                            cascade_id=out_cascade_id,
+                            payload=output,
+                            metadata={'source_step': self.name}
+                        )
+                        await self.streams['output'].put(out_msg)
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in {self.name}: {e}")
 
 class StepJSONSink(SinkStep):
     async def _setup(self):
