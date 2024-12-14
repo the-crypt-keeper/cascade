@@ -49,8 +49,12 @@ class Step(ABC):
         pass
 
 class TransformStep(Step):
-    async def run(self):
-        """Main processing loop"""
+    def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any]):
+        super().__init__(name, streams, params)
+        self.parallel = int(params.get('parallel', 1))
+        
+    async def worker(self):
+        """Individual worker process"""
         while True:
             try:
                 # Mark as idle before waiting
@@ -79,6 +83,16 @@ class TransformStep(Step):
                 break
             except Exception as e:
                 print(f"Error in {self.name}: {e}")
+
+    async def run(self):
+        """Spawn parallel workers"""
+        workers = [asyncio.create_task(self.worker()) for _ in range(self.parallel)]
+        try:
+            await asyncio.gather(*workers)
+        except asyncio.CancelledError:
+            for worker in workers:
+                worker.cancel()
+            await asyncio.gather(*workers, return_exceptions=True)
 
     @abstractmethod
     async def process(self, data: Any) -> Any:
