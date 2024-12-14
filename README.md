@@ -36,37 +36,7 @@ Multiple steps can consume from the same stream with fair load balancing based o
 
 ### Configuration Example
 
-```yaml
-assets:
-  word_list: file://assets/words.txt
-  template: |-
-    Generate a story using: {{words|join(', ')}}
-
-steps:
-  generate_words:
-    class: steps.WordGenerator
-    streams:
-      output: words
-    params:
-      word_source:
-        sample: $assets.word_list
-        count: 3
-
-  expand_template:
-    class: steps.TemplateExpander
-    streams:
-      input: words:1
-      output: prompts
-    params:
-      template: $assets.template
-
-  export_json:
-    class: steps.JSONExporter
-    streams:
-      input: prompts:1
-    params:
-      output_dir: output/stories
-```
+See [example-simple.yaml](example-simple.yaml) for a complete example of a simple pipeline that generates some seeds, expands a template and performs and LLM completion.
 
 ## Architecture
 
@@ -106,16 +76,18 @@ steps:
     class: cascade_steps.StepIdeaSource
     streams:
       output: vars
-    params:       
-      random_basic_words: 
-        sample: $assets.basic_words
-        count: 3
-      random_advanced_words:
-        sample: $assets.advanced_words
-        count: 3
-      technique: 
-        sample: $assets.world_techniques
-        count: 1
+    params:
+      count: 5
+      schema:
+        random_basic_words: 
+            sample: $assets.basic_words
+            count: 3
+        random_advanced_words:
+            sample: $assets.advanced_words
+            count: 3
+        technique: 
+            sample: $assets.world_techniques
+            count: 1
 ```
 
 This will produce output like:
