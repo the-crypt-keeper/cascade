@@ -17,7 +17,7 @@ steps:
     streams:
       output: vars
     params:
-      count: 1
+      count: 2
       schema:
         random_basic_words: 
           sample: $assets.basic_words
