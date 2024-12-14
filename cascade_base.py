@@ -73,7 +73,6 @@ class SQLiteStorage:
             return cursor.fetchone() is not None
 
     async def store(self, stream_name: str, msg: Message):
-        print("store", stream_name, msg)
         with self.transaction() as conn:
             conn.execute(
                 'INSERT INTO messages (stream_name, cascade_id, payload, metadata) VALUES (?, ?, ?, ?)',
@@ -150,12 +149,14 @@ class Stream:
             consumer_id = weighted_consumers[consumer_idx]
             await self.consumers[consumer_id][0].put(msg)
             
+        print("put()", msg.cascade_id)
+            
     async def get(self, consumer_id: str) -> Optional[Message]:
         """Get next message for this consumer"""
         if consumer_id not in self.consumers:
             raise ValueError(f"Consumer {consumer_id} not registered")
         next_msg = await self.consumers[consumer_id][0].get()
-        print("get()", consumer_id, next_msg)
+        print("get()", consumer_id, next_msg.cascade_id)
         return next_msg
 
     def is_empty(self) -> bool:

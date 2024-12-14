@@ -180,7 +180,7 @@ class StepLLMCompletion(TransformStep):
         """Initialize LLM completion parameters"""
         self.model = self.params.get('model')
         self.tokenizer_name = self.params.get('tokenizer')
-        self.sampler = self.params.get('sampler', {})
+        self.sampler = self.params.get('sampler', { 'temperature': 1.0, 'max_tokens': 2048 })
         
         if not self.model:
             raise Exception(f"LLMCompletion {self.name} requires model parameter.")

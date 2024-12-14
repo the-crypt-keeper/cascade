@@ -1,0 +1,51 @@
+assets:
+  basic_words: file://assets/basic.txt
+  advanced_words: file://assets/advanced.txt
+
+  story_template: |-
+    Let's engage in a short story creative writing session.
+
+    To spark our imagination, we'll use these random words as inspiration: {{random_basic_words|join(', ')}}, {{random_advanced_words|join(', ')}}
+
+    IMPORTANT: DO NOT DIRECTLY MENTION THAT YOU USED THESE RANDOM WORDS IN YOUR OUTPUT.
+
+    The short story should have a title and be 3 paragraphs long.
+
+steps:
+  generate_scenario:
+    class: cascade_steps.StepIdeaSource
+    streams:
+      output: vars
+    params:       
+      random_basic_words: 
+        sample: $assets.basic_words
+        count: 3
+      random_advanced_words:
+        sample: $assets.advanced_words
+        count: 3
+
+  expand_template:
+    class: cascade_steps.StepExpandTemplate
+    streams:
+      input: vars:1
+      output: prompts
+    params:
+      template: $assets.story_template
+
+  generate_response:
+    class: cascade_steps.StepLLMCompletion
+    streams:
+      input: prompts:1
+      output: responses
+    params:
+      model: "Meta-Llama-3.1-405B-Instruct"
+      sampler:
+        temperature: 0.7
+        max_tokens: 2048
+
+  export_json:
+    class: cascade_steps.StepJSONSink
+    streams:
+      input: responses:1
+    params:
+      output_dir: output/scenarios
