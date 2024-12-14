@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import asyncio
 import random
-import requests
 import time
 from cascade_base import *
 from jinja2 import Template
@@ -330,15 +329,15 @@ class StepText2Image(TransformStep):
             "height": self.height
         }
         
-        response = requests.post(
-            url=f"{self.api_url}/sdapi/v1/txt2img",
-            json=payload
-        )
-        
-        if response.status_code != 200:
-            raise Exception(f"Image API request failed with status code {response.status_code}")
-
-        result = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.api_url}/sdapi/v1/txt2img",
+                json=payload
+            ) as response:
+                if response.status != 200:
+                    raise Exception(f"Image API request failed with status code {response.status}")
+                    
+                result = await response.json()
         
         return {
             'image': result['images'][0],
