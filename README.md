@@ -45,8 +45,12 @@ See [example-simple.yaml](example-simple.yaml) for a complete example of a simpl
     - **CascadeManager**: Coordinates steps and streams, tracks pipeline completion
     - **CascadeLoader**: Configuration and asset loading and parameter resolution
     - **SQLiteStorage**: Provides persistent storage and idempotency checking
-- `cascade_steps.py`
-    - **Step Classes**: Processing step implementations
+- `cascade_steps.py`: Provides the core step implementations
+    - [StepIdeaSource](#stepideasource): Generates data by sampling from configured sources
+    - [StepExpandTemplate](#stepexpandtemplate): Expands Jinja2 templates using input data
+    - [StepLLMCompletion](#stepllmcompletion): Processes text through language models
+    - [StepJSONParser](#stepjsonparser): Parses and transforms JSON data
+    - [StepJSONSink](#stepjsonsink): Exports complete cascade histories to JSON files
 - `cascade_main.py`
     - **Cascade**: System entrypoint to load a configuration and run the pipeline.
 
