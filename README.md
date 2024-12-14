@@ -59,7 +59,7 @@ Cascade uses `uv` for dependency management. To set up:
 uv sync
 
 # Run pipeline
-uv run main.py pipeline.yaml
+uv run main.py example-simple.yaml
 ```
 
 ## Step Implementation
