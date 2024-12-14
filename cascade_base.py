@@ -212,6 +212,9 @@ class CascadeManager:
         
     def _check_completion(self):
         """Check if all steps are idle and all queues are empty"""
+        all_idle = len(self.idle_steps) == len(self.steps)
+        all_empty = all(stream.is_empty() for stream in self.streams.values())
+
         if self.debug:
             print("\nChecking completion state:")
             print(f"Registered steps: {self.steps}")
@@ -222,18 +225,13 @@ class CascadeManager:
                 print(f"Stream '{stream_name}' empty: {empty}")
                 print(f"-- Consumers: {list(stream.consumers.keys())}")
                 print(f"-- Queue sizes: {[queue.qsize() for queue, _ in stream.consumers.values()]}")
-
-            all_idle = len(self.idle_steps) == len(self.steps)
-            all_empty = all(stream.is_empty() for stream in self.streams.values())
             
             print(f"All steps idle: {all_idle} ({len(self.idle_steps)} == {len(self.steps)})")
             print(f"All queues empty: {all_empty}")
-            
-            if all_idle and all_empty:
+
+        if all_idle and all_empty:
+            if self.debug:
                 print("Pipeline complete!")
-        else:
-            all_idle = len(self.idle_steps) == len(self.steps)
-            all_empty = all(stream.is_empty() for stream in self.streams.values())
             self._completion_event.set()
             
     async def wait_for_completion(self):
