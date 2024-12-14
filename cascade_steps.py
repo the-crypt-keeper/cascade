@@ -277,7 +277,7 @@ class StepJSONParser(Step):
                 # Output each result as a separate message
                 for i, output in enumerate(outputs):
                     # Generate unique cascade ID for each output
-                    out_cascade_id = msg.derive_cascade_id(f"{self.name}:{i}")
+                    out_cascade_id = msg.derive_cascade_id(self.name, index=i)
                     
                     # Check if we've already processed this
                     if not await self.streams['output'].check_exists(out_cascade_id):
