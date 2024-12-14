@@ -66,6 +66,15 @@ uv sync
 uv run main.py example-simple.yaml
 ```
 
+## Usage
+
+1. Define your pipeline in YAML (see below)
+2. (optional) Implement any custom steps required.
+3. Run the pipeline:
+```bash
+uv run main.py pipeline.yaml
+```
+
 ## Step Implementation
 
 Cascade provides three base step types that can be extended to create custom processing steps. All steps support common configuration options:
@@ -141,7 +150,6 @@ steps:
       output: prompts
     params:
       template: "Template using {{variable}}"
-      parallel: 2
 ```
 
 #### StepLLMCompletion
@@ -219,13 +227,4 @@ Output format:
     "transform": "processed result"
   }
 }
-```
-
-## Usage
-
-1. Define your pipeline in YAML
-2. Implement your custom steps
-3. Run the pipeline:
-```bash
-uv run main.py pipeline.yaml
 ```
