@@ -6,6 +6,8 @@ from cascade_base import *
 from jinja2 import Template
 from pathlib import Path
 import hashlib
+import time
+from llm_utils import build_tokenizer, universal_llm_request
 
 class Step(ABC):
     def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any]):
@@ -173,6 +175,45 @@ class StepExpandTemplate(TransformStep):
         """Expand template using input data as context"""
         return self.template.render(**data)
     
+class StepLLMCompletion(TransformStep):
+    async def _setup(self):
+        """Initialize LLM completion parameters"""
+        self.model = self.params.get('model')
+        self.tokenizer_name = self.params.get('tokenizer')
+        self.sampler = self.params.get('sampler', {})
+        
+        if not self.model:
+            raise Exception(f"LLMCompletion {self.name} requires model parameter.")
+            
+        self.completion_tokenizer = build_tokenizer(self.tokenizer_name) if self.tokenizer_name else None
+
+    async def process(self, data: Any) -> Any:
+        """Process input through LLM"""
+        messages = [{'role': 'user', 'content': data}]
+        
+        if self.completion_tokenizer:
+            messages = [{
+                "role": "user", 
+                "content": self.completion_tokenizer.apply_chat_template(
+                    messages, 
+                    tokenize=False, 
+                    add_generation_prompt=True, 
+                    bos_token=''
+                )
+            }]
+            
+        answers = await universal_llm_request(
+            self.completion_tokenizer is not None,
+            self.model,
+            messages,
+            self.sampler,
+            1
+        )
+        
+        if answers:
+            return answers[0]
+        return None
+
 class StepJSONSink(SinkStep):
     async def _setup(self):
         # Ensure output directory exists
