@@ -7,7 +7,6 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 import yaml
-from copy import copy
 
 @dataclass
 class Message:
