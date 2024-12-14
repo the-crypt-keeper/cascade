@@ -86,10 +86,10 @@ Cascade uses `uv` for dependency management. To set up:
 
 ```bash
 # Install dependencies from lock file
-uv pip install -r requirements.txt
+uv sync
 
 # Run pipeline
-uv run python -m cascade pipeline.yaml
+uv run main.py pipeline.yaml
 ```
 
 ## Step Implementation
@@ -181,5 +181,5 @@ Creates files named with MD5 hashes of cascade IDs containing:
 2. Implement your custom steps
 3. Run the pipeline:
 ```bash
-python -m cascade pipeline.yaml
+uv run main.py pipeline.yaml
 ```
