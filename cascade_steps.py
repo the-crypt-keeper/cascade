@@ -257,8 +257,9 @@ class StepJSONParser(Step):
                 eidx = data.rfind('}')
                 
                 if sidx == -1 or eidx == -1:
+                    print(f"JSON parse failed in {self.name}: {data}")
                     continue
-                    
+
                 try:
                     result = json.loads(data[sidx:eidx+1])
                 except json.JSONDecodeError:

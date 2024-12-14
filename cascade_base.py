@@ -195,17 +195,19 @@ class CascadeManager:
         """Mark a step as idle (no more work to do)"""
         if self.debug:
             print(f"Step {step_id} marked idle")
-        self.steps.add(step_id)  # Track step dynamically
+        if step_id not in self.steps:
+            self.steps.add(step_id)
         self.idle_steps.add(step_id)
         self._check_completion()
 
     def mark_step_active(self, step_id: str):
         """Mark a step as active (found work to do)"""
+        if step_id not in self.steps:
+            self.steps.add(step_id)
         if step_id in self.idle_steps:
             if self.debug:
                 print(f"Step {step_id} marked active")
             self.idle_steps.discard(step_id)
-        self.steps.add(step_id)  # Track step dynamically
 
     def _check_completion(self):
         """Check if all steps are idle and all queues are empty"""
