@@ -17,7 +17,7 @@ steps:
     streams:
       output: vars
     params:
-      count: 2
+      count: 2  # Using base SourceStep count parameter
       schema:
         random_basic_words: 
           sample: $assets.basic_words
