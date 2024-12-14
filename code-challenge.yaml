@@ -1,0 +1,155 @@
+assets:
+  basic_words: file://assets/basic.txt
+  advanced_words: file://assets/advanced.txt
+
+  idea_template: |-
+    You are tasked with brainstorming a list of programming challenge tasks suitable for senior-level developers. These challenges should be complex, requiring advanced knowledge and skills in various areas of computer science and software engineering.
+
+    Guidelines for generating challenge ideas:
+    - Focus on tasks that require deep understanding of algorithms, data structures, and system design
+    - Include challenges that test problem-solving skills, optimization abilities, and architectural thinking
+    - Vary the difficulty level, but ensure all challenges are appropriate for senior developers
+    - Cover a wide range of topics in computer science and software engineering
+
+    Your output should be a numbered list of exactly 3 challenge tasks. Each task should have:
+    1. A concise title
+    2. A brief description (1-2 sentences)
+    3. Key concepts or skills tested
+
+    Examples of challenge categories and specific tasks:
+    1. Advanced Algorithms: Implement a parallel merge sort algorithm
+    2. Distributed Systems: Design a distributed cache with consistency guarantees
+    3. Language Design: Create a basic interpreter for a custom programming language
+    4. Machine Learning: Implement a neural network from scratch without using ML libraries
+    5. Operating Systems: Write a simple scheduler for a multi-threaded operating system
+
+    First, use a <scratchpad></scratchpad> field to free-form brainstorm ideas before designing the challenges, using the following random words as entropy: {{random_basic_words|join(', ')}}, {{random_advanced_words|join(', ')}}. Consider various areas of computer science and software engineering that would challenge a senior developer. Explore a diverse range of concepts.
+
+    Then, provide your final response in JSON format:
+
+    ```json
+    {
+        "challenge_0": {            
+                "title": "<first challenge title>",
+                "description": "<first challenge description>",
+                "concepts": "<concepts covered by the first challenge>",
+        },
+        "challenge_1": {
+                "title": "<second challenge title>",
+                "description": "<first challenge description>",
+                "concepts": "<concepts covered by the second challenge>",
+        },
+        "challenge_2": {
+                "title": "<third challenge title>",
+                "description": "<third challenge description>",
+                "concepts": "<concepts covered by the third challenge>",
+        }
+    }
+    ```
+
+  task_template: |-
+    You will be given a JSON object containing information about three programming challenges.
+
+    Your task is to think step-by-step to analyze these challenges, select the most appropriate one to be represented as a single function, design that function, and create test cases for it. Follow these steps:
+
+    1. Consider the following brainstorm ideas for programming challenges:
+
+    {{challenge_0}}
+
+    {{challenge_1}}
+
+    {{challenge_2}}
+
+    2. Analyze the three challenges and select the one that is most appropriate to be represented as a single function that takes only simple data types (int, str, float, list, dict) as inputs and outputs. Consider the complexity of the challenge (prefer higher complexity) and how well it can be encapsulated in a single function.
+
+    3. For the selected challenge, design (but do not implement) the function that best represents its core concepts while adhereing to the restrictions above. Describe the function's operations, inputs, and outputs in detail. Ensure that the function only uses simple data types for its inputs and outputs.
+
+    4. Generate 7-10 test cases for this function. Include both typical use cases and potential error conditions. Each test case should specify the input(s) and the expected output or behavior.
+
+    5. Present your final result in a YAML block, formatted as follows:
+
+    ```yaml
+    ChallengeName:
+        Signature: "function_name(param1, param2, ...)"
+        Input: "Description of input parameters"
+        Output: "Description of the function's output"
+        Description: "A DETAILED description of the function's purpose and expected methods of operation"
+        Checks:
+            test_case_1:
+                assert: function_call(args)
+                eq: expected_output
+            test_case_2:
+                assert: function_call(args)
+                eq: expected_output
+            # ... (include all 7-10 test cases)
+    ```
+
+    Ensure that your YAML block includes all necessary information about the function and all 7-10 test cases. Use appropriate indentation and formatting for the YAML structure.
+
+    Remember to think step-by-step, starting from step 1!
+
+steps:
+  generate_scenario:
+    class: cascade_steps.StepIdeaSource
+    streams:
+      output: vars
+    params:
+      count: 1
+      schema:
+        random_basic_words:
+          sample: $assets.basic_words
+          count: 3
+        random_advanced_words:
+          sample: $assets.advanced_words
+          count: 7
+
+  expand_idea_template:
+    class: cascade_steps.StepExpandTemplate
+    streams:
+      input: vars:1
+      output: idea_prompts
+    params:
+      template: $assets.idea_template
+
+  generate_ideas:
+    class: cascade_steps.StepLLMCompletion
+    streams:
+      input: idea_prompts:1
+      output: raw_ideas
+    params:
+      model: "Meta-Llama-3.1-405B-Instruct"
+      sampler:
+        temperature: 0.7
+        max_tokens: 2048
+
+  parse_ideas:
+    class: cascade_steps.StepJSONParser
+    streams:
+      input: raw_ideas:1
+      output: parsed_ideas
+
+  expand_task_template:
+    class: cascade_steps.StepExpandTemplate
+    streams:
+      input: parsed_ideas:1
+      output: task_prompts
+    params:
+      template: $assets.task_template
+
+  generate_task:
+    class: cascade_steps.StepLLMCompletion
+    streams:
+      input: task_prompts:1
+      output: tasks
+    params:
+      model: "Meta-Llama-3.1-405B-Instruct"
+      sampler:
+        temperature: 0.7
+        max_tokens: 2048
+
+  export_json:
+    class: cascade_steps.StepJSONSink
+    streams:
+      input: tasks:1
+    params:
+      output_dir: output/challenges
