@@ -3,11 +3,13 @@ from typing import Dict, Any, Optional
 import asyncio
 import random
 import time
-from cascade_base import *
 from jinja2 import Template
 from pathlib import Path
 import hashlib
 import time
+import aiohttp
+
+from cascade_base import *
 from cascade_utils import build_tokenizer, universal_llm_request
 
 class Step(ABC):

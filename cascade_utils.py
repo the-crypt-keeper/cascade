@@ -1,8 +1,6 @@
 from transformers import AutoTokenizer
 import aiohttp
 import os
-import json
-import time
 
 API_BASE_URL = os.getenv('OPENAI_BASE_URL',"http://100.109.96.89:3333/v1")
 API_KEY = os.getenv('OPENAI_API_KEY', "xx-ignored")
