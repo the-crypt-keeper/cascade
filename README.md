@@ -47,7 +47,7 @@ See [example-simple.yaml](example-simple.yaml) for a complete example of a simpl
     - **SQLiteStorage**: Provides persistent storage and idempotency checking
 - `cascade_steps.py`
     - **Step Classes**: Processing step implementations
-- `main.py`    
+- `cascade_main.py`
     - **Cascade**: System entrypoint to load a configuration and run the pipeline.
 
 ## Installation
