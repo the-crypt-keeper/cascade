@@ -163,12 +163,13 @@ class Stream:
         return all(queue.empty() for queue, _ in self.consumers.values())
 
 class CascadeManager:
-    def __init__(self, storage: SQLiteStorage):
+    def __init__(self, storage: SQLiteStorage, debug: bool = False):
         self.storage = storage
         self.streams: Dict[str, Stream] = {}
         self.steps: set[str] = set()  # Track all registered steps
         self.idle_steps: set[str] = set()
         self._completion_event = asyncio.Event()
+        self.debug = debug
         
     def create_stream(self, name: str) -> Stream:
         if name in self.streams:
@@ -192,14 +193,16 @@ class CascadeManager:
 
     def mark_step_idle(self, step_name: str):
         """Mark a step as idle (no more work to do)"""
-        print(f"Step {step_name} marked idle")
+        if self.debug:
+            print(f"Step {step_name} marked idle")
         self.idle_steps.add(step_name)
         self._check_completion()
 
     def mark_step_active(self, step_name: str):
         """Mark a step as active (found work to do)"""
         if step_name in self.idle_steps:
-            print(f"Step {step_name} marked active")
+            if self.debug:
+                print(f"Step {step_name} marked active")
             self.idle_steps.discard(step_name)
 
     def register_step(self, step_name: str):
@@ -209,24 +212,28 @@ class CascadeManager:
         
     def _check_completion(self):
         """Check if all steps are idle and all queues are empty"""
-        print("\nChecking completion state:")
-        print(f"Registered steps: {self.steps}")
-        print(f"Idle steps: {self.idle_steps}")
-        
-        for stream_name, stream in self.streams.items():
-            empty = stream.is_empty()
-            print(f"Stream '{stream_name}' empty: {empty}")
-            print(f"-- Consumers: {list(stream.consumers.keys())}")
-            print(f"-- Queue sizes: {[queue.qsize() for queue, _ in stream.consumers.values()]}")
+        if self.debug:
+            print("\nChecking completion state:")
+            print(f"Registered steps: {self.steps}")
+            print(f"Idle steps: {self.idle_steps}")
+            
+            for stream_name, stream in self.streams.items():
+                empty = stream.is_empty()
+                print(f"Stream '{stream_name}' empty: {empty}")
+                print(f"-- Consumers: {list(stream.consumers.keys())}")
+                print(f"-- Queue sizes: {[queue.qsize() for queue, _ in stream.consumers.values()]}")
 
-        all_idle = len(self.idle_steps) == len(self.steps)
-        all_empty = all(stream.is_empty() for stream in self.streams.values())
-        
-        print(f"All steps idle: {all_idle} ({len(self.idle_steps)} == {len(self.steps)})")
-        print(f"All queues empty: {all_empty}")
-        
-        if all_idle and all_empty:
-            print("Pipeline complete!")
+            all_idle = len(self.idle_steps) == len(self.steps)
+            all_empty = all(stream.is_empty() for stream in self.streams.values())
+            
+            print(f"All steps idle: {all_idle} ({len(self.idle_steps)} == {len(self.steps)})")
+            print(f"All queues empty: {all_empty}")
+            
+            if all_idle and all_empty:
+                print("Pipeline complete!")
+        else:
+            all_idle = len(self.idle_steps) == len(self.steps)
+            all_empty = all(stream.is_empty() for stream in self.streams.values())
             self._completion_event.set()
             
     async def wait_for_completion(self):

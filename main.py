@@ -6,10 +6,10 @@ from cascade_base import *
 import cascade_steps
 
 class Cascade:
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path, debug: bool = False):
         self.config_path = config_path
         self.storage = SQLiteStorage(str(config_path.with_suffix('.db')))
-        self.manager = CascadeManager(self.storage)
+        self.manager = CascadeManager(self.storage, debug=debug)
         
     def _import_step_class(self, class_name: str) -> Type[cascade_steps.Step]:
         """Dynamically import a step class"""
@@ -80,10 +80,11 @@ async def main():
     import argparse
     parser = argparse.ArgumentParser(description='Cascade Pipeline Runner')
     parser.add_argument('config', type=Path, help='Path to pipeline configuration')
+    parser.add_argument('--debug', action='store_true', help='Enable debug output')
     args = parser.parse_args()
     
     # Run pipeline
-    cascade = Cascade(args.config)
+    cascade = Cascade(args.config, debug=args.debug)
     await cascade.setup()
     await cascade.run()
 
