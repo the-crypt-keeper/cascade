@@ -47,7 +47,7 @@ assets:
     }
     ```
 
-    Make SURE the JSON is VALID and every { matches a }
+    Make SURE the JSON structure is VALID, all values are STRINGS and every { matches a }.
 
   task_template: |-
     You will be given a JSON object containing information about three programming challenges.
@@ -119,7 +119,8 @@ steps:
       input: idea_prompts:1
       output: raw_ideas
     params:
-      model: "Meta-Llama-3.1-405B-Instruct"
+      model: "gemma-2-9b-it-exl2-6.0bpw"
+      parallel: 2
       sampler:
         temperature: 0.7
         max_tokens: 2048
@@ -144,6 +145,7 @@ steps:
       input: task_prompts:1
       output: tasks
     params:
+      parallel: 2
       model: "Cohere-command-r-plus"
       sampler:
         temperature: 0.7
