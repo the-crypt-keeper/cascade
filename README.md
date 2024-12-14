@@ -146,6 +146,31 @@ steps:
 
 The template has access to all keys from the input dictionary and standard Jinja2 filters.
 
+### StepLLMCompletion (TransformStep)
+
+Processes input through a language model:
+
+```yaml
+steps:
+  generate_response:
+    class: cascade_steps.StepLLMCompletion
+    streams:
+      input: prompts:1
+      output: responses
+    params:
+      model: "mistral"  # Required: LLM model to use
+      tokenizer: "mistral"  # Optional: tokenizer name
+      sampler:  # Optional sampling parameters
+        temperature: 0.7
+        max_tokens: 1024
+```
+
+The step supports:
+- Custom model selection
+- Optional tokenizer configuration
+- Configurable sampling parameters
+- Automatic chat template application when using tokenizers
+
 ### StepJSONSink (SinkStep)
 
 Exports the complete history of a cascade to a JSON file:

@@ -33,9 +33,21 @@ steps:
     params:
       template: $assets.world_prompt_template
 
+  generate_response:
+    class: cascade_steps.StepLLMCompletion
+    streams:
+      input: prompts:1
+      output: responses
+    params:
+      model: "mistral"
+      tokenizer: "mistral"
+      sampler:
+        temperature: 0.7
+        max_tokens: 1024
+
   export_json:
     class: cascade_steps.StepJSONSink
     streams:
-      input: prompts:1
+      input: responses:1
     params:
       output_dir: output/scenarios
