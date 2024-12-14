@@ -143,6 +143,42 @@ The step supports:
 - Configurable sampling parameters
 - Automatic chat template application when using tokenizers
 
+### StepJSONParser (Step)
+
+Parses JSON from input text and provides flexible output options:
+
+```yaml
+steps:
+  parse_json:
+    class: cascade_steps.StepJSONParser
+    streams:
+      input: responses
+      output: parsed
+    params:
+      first_key: true  # Optional: return only the first key's value
+      explode_list: "items"  # Optional: split list field into separate outputs
+      explode_keys: ["field1", "field2"]  # Optional: output specific keys separately
+```
+
+The step supports several parsing modes:
+
+- **Basic JSON parsing**: By default, parses the first valid JSON object found in the input text
+- **First Key Extraction**: With `first_key: true`, returns only the value of the first key in the JSON object
+- **List Explosion**: With `explode_list: "field_name"`, splits a list field into separate output messages
+- **Key Explosion**: With `explode_keys: ["key1", "key2"]`, outputs specified fields as separate messages
+
+Example input/output:
+
+```python
+# Input text containing JSON
+'''Some text before {"items": ["a", "b", "c"], "other": "data"} and after'''
+
+# With explode_list: "items" produces three outputs:
+"a"  # cascade_id: input_step:count=0/parse_json:index=0
+"b"  # cascade_id: input_step:count=0/parse_json:index=1
+"c"  # cascade_id: input_step:count=0/parse_json:index=2
+```
+
 ### StepJSONSink (SinkStep)
 
 Exports the complete history of a cascade to a JSON file:
