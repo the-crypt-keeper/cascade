@@ -31,19 +31,7 @@ async def universal_llm_request(completion, model, messages, params, n):
         answers = None
         
     return answers
-
-def simple_extract_json(response, first_key = False):
-    result = response[response.find('{'):response.rfind('}')+1]
-    try:
-        data = json.loads(result)
-        if first_key and isinstance(data, dict): data = data.get(list(data.keys())[0])
-        return data
-    except Exception as e:
-        print('---- JSON PARSING ERROR ----')
-        print(result)
-        print(e)
-        return None
-    
+   
 class InternalTokenizer:    
     def __init__(self, name, fn):
         self.fn = fn

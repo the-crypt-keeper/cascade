@@ -7,7 +7,7 @@ from jinja2 import Template
 from pathlib import Path
 import hashlib
 import time
-from llm_utils import build_tokenizer, universal_llm_request
+from cascade_utils import build_tokenizer, universal_llm_request
 
 class Step(ABC):
     def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any]):
