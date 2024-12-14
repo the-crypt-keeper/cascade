@@ -229,6 +229,10 @@ class CascadeManager:
             
             print(f"All steps idle: {all_idle} ({len(self.idle_steps)} == {len(self.steps)})")
             print(f"All queues empty: {all_empty}")
+        else:
+            # Count non-empty streams
+            active_streams = sum(1 for stream in self.streams.values() if not stream.is_empty())
+            print(f"Progress: {len(self.idle_steps)}/{len(self.steps)} steps idle, {active_streams} streams with pending messages")
 
         if all_idle and all_empty:
             if self.debug:
