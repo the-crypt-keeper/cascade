@@ -16,13 +16,15 @@ steps:
     class: cascade_steps.StepIdeaSource
     streams:
       output: vars
-    params:       
-      random_basic_words: 
-        sample: $assets.basic_words
-        count: 3
-      random_advanced_words:
-        sample: $assets.advanced_words
-        count: 3
+    params:
+      count: 1
+      schema:
+        random_basic_words: 
+          sample: $assets.basic_words
+          count: 3
+        random_advanced_words:
+          sample: $assets.advanced_words
+          count: 3
 
   expand_template:
     class: cascade_steps.StepExpandTemplate

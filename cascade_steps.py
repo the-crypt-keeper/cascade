@@ -145,26 +145,37 @@ class SinkStep(Step):
         pass
     
 class StepIdeaSource(SourceStep):
+    async def _setup(self):
+        if 'count' not in self.params:
+            raise ValueError(f"StepIdeaSource {self.name} requires 'count' parameter")
+        if 'schema' not in self.params:
+            raise ValueError(f"StepIdeaSource {self.name} requires 'schema' parameter")
+
     async def generate(self) -> Dict[str, Any]:
-        """Generate a new scenario by processing param definitions"""
-        result = {}
+        """Generate a new scenario by processing schema definitions"""
+        results = []
+        count = int(self.params['count'])
         
-        for key, param in self.params.items():
-            if 'sample' in param:
-                source = param['sample']
-                count = int(param.get('count', 1))
-                samples = random.sample(source, count)
-                
-                # Return single item unless count > 1 or always_array is True
-                if count == 1 and not param.get('always_array', False):
-                    result[key] = samples[0]
-                else:
-                    result[key] = samples
+        for _ in range(count):
+            result = {}
+            for key, param in self.params['schema'].items():
+                if 'sample' in param:
+                    source = param['sample']
+                    sample_count = int(param.get('count', 1))
+                    samples = random.sample(source, sample_count)
                     
-            elif 'constant' in param:
-                result[key] = param['constant']
-                
-        return result
+                    # Return single item unless count > 1 or always_array is True
+                    if sample_count == 1 and not param.get('always_array', False):
+                        result[key] = samples[0]
+                    else:
+                        result[key] = samples
+                        
+                elif 'constant' in param:
+                    result[key] = param['constant']
+            
+            results.append(result)
+            
+        return results[0] if count == 1 else results
     
 class StepExpandTemplate(TransformStep):
     async def _setup(self):
