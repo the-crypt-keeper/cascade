@@ -12,7 +12,7 @@ ADVANCED_WORDS = open('assets/advanced.txt').read().splitlines()
 TECHNIQUES = json.loads(open('assets/world_techniques.json').read())
 
 # Templates
-WORLD_TEMPLATE = """Let's engage in an innovative creative brainstorming session using the {{title}} technique. {{summary}}
+WORLD_TEMPLATE = """Let's engage in an innovative creative brainstorming session using the {{technique.title}} technique. {{technique.summary}}
 
 To spark our imagination, we'll use these random words as inspiration: {{random_words}}
 
@@ -78,13 +78,10 @@ async def main():
                     'sample': BASIC_WORDS + ADVANCED_WORDS,
                     'count': 6
                 },
-                'title': {
-                    'sample': [t['title'] for t in TECHNIQUES],
-                    'count': 1
-                },
-                'summary': {
-                    'sample': [t['summary'] for t in TECHNIQUES],
-                    'count': 1
+                'technique': {
+                    'sample': TECHNIQUES,
+                    'count': 1,
+                    'always_array': False
                 }
             }
         }
