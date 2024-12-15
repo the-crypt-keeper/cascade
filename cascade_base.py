@@ -139,7 +139,6 @@ class Stream:
         for consumer_id, (_, weight) in self.consumers.items():
             if weight == 0:  # Special case: gets all messages
                 await self.consumers[consumer_id][0].put(msg)
-                return
             weighted_consumers.extend([consumer_id] * weight)
 
         if weighted_consumers:
