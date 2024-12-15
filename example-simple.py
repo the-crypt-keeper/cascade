@@ -3,12 +3,8 @@ from cascade_main import Cascade
 from cascade_steps import *
 
 # Load assets
-with open('assets/basic.txt') as f:
-    BASIC_WORDS = [line.strip() for line in f if line.strip()]
-    
-with open('assets/advanced.txt') as f:
-    ADVANCED_WORDS = [line.strip() for line in f if line.strip()]
-
+BASIC_WORDS = open('assets/basic.txt').readlines()
+ADVANCED_WORDS = open('assets/advanced.txt').readlines()
 STORY_TEMPLATE = '''
 Let's engage in a short story creative writing session.
 
