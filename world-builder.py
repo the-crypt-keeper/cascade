@@ -102,7 +102,7 @@ async def main():
         name='generate_world',
         streams={
             'input': 'world_prompts:1',
-            'output': 'worlds'
+            'output': 'raw_worlds'
         },
         params={
             'model': 'gpt-4',
@@ -112,6 +112,14 @@ async def main():
                 'temperature': 0.7,
                 'max_tokens': 2048
             }
+        }
+    ))
+
+    await cascade.step(StepJSONParser(
+        name='parse_world',
+        streams={
+            'input': 'raw_worlds:1',
+            'output': 'worlds'
         }
     ))
     
