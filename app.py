@@ -68,31 +68,31 @@ def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], L
     
     return splits, compares
 
-def group_by_splits(messages: List[Message], splits: List[int], compares: List[int]) -> Dict:
+def group_by_splits(messages: List[Message], split_steps: List[str], compare_steps: List[str]) -> Dict:
     """Group messages by split dimensions"""
     groups = defaultdict(list)
     
     for msg in messages:
-        components = parse_cascade_id(msg.cascade_id)
+        components = {name: params for name, params in parse_cascade_id(msg.cascade_id)}
         
         # Build split key
-        if splits:
+        if split_steps:
             split_components = []
-            for i in splits:
-                name, params = components[i]
+            for step in split_steps:
+                params = components.get(step, {})
                 param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
-                split_components.append((name, param_str))
+                split_components.append((step, param_str))
             split_key = tuple(split_components)
         else:
             split_key = ('all',)
             
         # Build compare key
-        if compares:
+        if compare_steps:
             compare_components = []
-            for i in compares:
-                name, params = components[i]
+            for step in compare_steps:
+                params = components.get(step, {})
                 param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
-                compare_components.append((name, param_str))
+                compare_components.append((step, param_str))
             compare_key = tuple(compare_components)
         else:
             compare_key = ('value',)
