@@ -202,6 +202,7 @@ class StepLLMCompletion(TransformStep):
         self.tokenizer_name = self.params.get('tokenizer')
         self.schema_mode = self.params.get('schema_mode', 'none')
         self.schema_json = self.params.get('schema_json')
+        self.api_base = self.params.get('api_base')
         self.sampler = self.params.get('sampler', { 'temperature': 1.0, 'max_tokens': 2048 }).copy()
 
         if not self.model:
@@ -255,7 +256,8 @@ class StepLLMCompletion(TransformStep):
             self.completion_tokenizer is not None,
             self.model,
             messages,
-            self.sampler
+            self.sampler,
+            api_base=self.api_base
         )
         
         if answers:

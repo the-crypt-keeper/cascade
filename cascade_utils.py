@@ -2,20 +2,21 @@ from transformers import AutoTokenizer
 import aiohttp
 import os
 
-API_BASE_URL = os.getenv('OPENAI_BASE_URL',"http://100.109.96.89:3333/v1")
-API_KEY = os.getenv('OPENAI_API_KEY', "xx-ignored")
-
-async def universal_llm_request(completion, model, messages, params):
+async def universal_llm_request(completion, model, messages, params, api_base=None):
+    # Get API base URL from params, env, or default
+    api_base = api_base or os.getenv('OPENAI_BASE_URL', "http://localhost:8000/v1")
+    api_key = os.getenv('OPENAI_API_KEY', "xx-ignored")
+    
     payload = { 'model': model, 'messages': messages, **params }
-    headers = { 'Authentication': 'Bearer '+API_KEY }
+    headers = { 'Authentication': 'Bearer '+api_key }
 
     async with aiohttp.ClientSession() as session:
         if completion:
             payload['prompt'] = payload.pop('messages')[0]['content']            
-            async with session.post(API_BASE_URL+'/completions', json=payload, headers=headers) as resp:
+            async with session.post(f"{api_base}/completions", json=payload, headers=headers) as resp:
                 response = await resp.json()
         else:
-            async with session.post(API_BASE_URL+'/chat/completions', json=payload, headers=headers) as resp:
+            async with session.post(f"{api_base}/chat/completions", json=payload, headers=headers) as resp:
                 response = await resp.json()
     
     if 'choices' in response:
