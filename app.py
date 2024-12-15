@@ -138,8 +138,11 @@ def main():
         st.warning("No streams found in database")
         return
         
-    # Stream selection
-    selected_stream = st.selectbox("Select Stream", streams)
+    # Controls row
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        selected_stream = st.selectbox("Select Stream", streams)
     
     # Get messages for selected stream
     messages = asyncio.run(cascade.storage.get_all_messages(selected_stream))
@@ -155,22 +158,17 @@ def main():
     # Get suggested splits/compares
     default_splits, default_compares = get_step_suggestions(step_params)
     
-    # UI for selecting split/compare dimensions
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Split Dimensions")
+    with col2:
         splits = st.multiselect(
-            "Select split dimensions",
+            "Split Dimensions",
             step_names,
             default=default_splits,
             help="Steps with varying parameters to split on"
         )
         
-    with col2:
-        st.subheader("Compare Dimensions")
+    with col3:
         compares = st.multiselect(
-            "Select compare dimensions",
+            "Compare Dimensions", 
             step_names,
             default=default_compares,
             help="Steps with varying parameters to compare"
