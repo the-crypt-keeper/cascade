@@ -227,28 +227,59 @@ def main():
                     compare_display.append(format_step(name, params))
                 st.subheader(f"Compare: {' / '.join(compare_display)}")
                 
-                # Display history
+                # Get steps from compare dimensions
+                compare_steps = set()
+                for pos in compares:
+                    name, _ = components[pos]
+                    compare_steps.add(name)
+                
+                # Display compare dimension values first
                 for step, data in history.items():
-                    st.write(f"**{step}:**")
-                    
-                    if isinstance(data, dict) and 'image' in data:
-                        # Handle image data
-                        image_path = Path(project_name).parent / data['image']
-                        if image_path.exists():
-                            st.image(str(image_path))
+                    if step in compare_steps:
+                        st.write(f"**{step}:**")
+                        if isinstance(data, dict) and 'image' in data:
+                            # Handle image data
+                            image_path = Path(project_name).parent / data['image']
+                            if image_path.exists():
+                                st.image(str(image_path))
+                            else:
+                                st.warning(f"Image not found: {image_path}")
+                                
+                            # Show other metadata
+                            other_data = {k:v for k,v in data.items() if k != 'image'}
+                            if other_data:
+                                st.json(other_data)
+                        elif isinstance(data, (dict, list)):
+                            # Show JSON data
+                            st.json(data)
                         else:
-                            st.warning(f"Image not found: {image_path}")
-                            
-                        # Show other metadata
-                        other_data = {k:v for k,v in data.items() if k != 'image'}
-                        if other_data:
-                            st.json(other_data)
-                    elif isinstance(data, (dict, list)):
-                        # Show JSON data
-                        st.json(data)
-                    else:
-                        # Show string/primitive data
-                        st.write(data)
+                            # Show string/primitive data
+                            st.write(data)
+                
+                # Put other history items in expander
+                other_history = {k:v for k,v in history.items() if k not in compare_steps}
+                if other_history:
+                    with st.expander("More..."):
+                        for step, data in other_history.items():
+                            st.write(f"**{step}:**")
+                            if isinstance(data, dict) and 'image' in data:
+                                # Handle image data
+                                image_path = Path(project_name).parent / data['image']
+                                if image_path.exists():
+                                    st.image(str(image_path))
+                                else:
+                                    st.warning(f"Image not found: {image_path}")
+                                    
+                                # Show other metadata
+                                other_data = {k:v for k,v in data.items() if k != 'image'}
+                                if other_data:
+                                    st.json(other_data)
+                            elif isinstance(data, (dict, list)):
+                                # Show JSON data
+                                st.json(data)
+                            else:
+                                # Show string/primitive data
+                                st.write(data)
 
 if __name__ == "__main__":
     import asyncio
