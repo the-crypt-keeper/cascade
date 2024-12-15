@@ -198,10 +198,33 @@ class StepLLMCompletion(TransformStep):
         """Initialize LLM completion parameters"""
         self.model = self.params.get('model')
         self.tokenizer_name = self.params.get('tokenizer')
-        self.sampler = self.params.get('sampler', { 'temperature': 1.0, 'max_tokens': 2048 })
-        
+        self.schema_mode = self.params.get('schema_mode', 'none')
+        self.schema_json = self.params.get('schema_json')
+        self.sampler = self.params.get('sampler', { 'temperature': 1.0, 'max_tokens': 2048 }).copy()
+
         if not self.model:
             raise Exception(f"LLMCompletion {self.name} requires model parameter.")
+
+        # Handle schema modes
+        if self.schema_mode == "none":
+            pass
+        elif self.schema_mode == "openai-schema":
+            self.sampler['response_format'] = {
+                'type': "json_schema",
+                'json_schema': {
+                    "strict": True,
+                    "name": "Result",
+                    "schema": self.schema_json
+                }
+            }
+        elif self.schema_mode == "openai-json":
+            self.sampler['response_format'] = { 'type': "json_object" }
+        elif self.schema_mode == "vllm":
+            self.sampler['guided_json'] = self.schema_json
+        elif self.schema_mode == "llama":
+            self.sampler['json_schema'] = self.schema_json
+        else:
+            raise Exception(f"Invalid schema_mode: {self.schema_mode}")
             
         self.completion_tokenizer = build_tokenizer(self.tokenizer_name) if self.tokenizer_name else None
 
