@@ -352,12 +352,13 @@ class StepText2Image(TransformStep):
                     raise Exception("No SD models found")
                 self.model = models[0]['model_name']
 
-    async def process(self, msg: Message) -> Dict[str, Any]:
-        # Check if we've already processed this with current model
-        if await self.streams['output'].check_exists(msg.derive_cascade_id(self.name, model=self.model)): 
+    async def process(self, msg: Message) -> None:
+        """Generate image from text prompt"""
+        # Check if output for this model already exists
+        out_cascade_id = msg.derive_cascade_id(self.name, model=self.model)
+        if await self.streams['output'].check_exists(out_cascade_id):
             return
 
-        """Generate image from text prompt"""
         payload = {
             "prompt": msg.payload,
             "steps": self.steps,
@@ -374,8 +375,8 @@ class StepText2Image(TransformStep):
                     raise Exception(f"Image API request failed with status code {response.status}")
                     
                 result = await response.json()
-                
-        return {
+
+        output = {
             'model': self.model,
             'image': result['images'][0],
             'metadata': {
@@ -385,6 +386,13 @@ class StepText2Image(TransformStep):
                 'steps': self.steps
             }
         }
+
+        out_msg = Message(
+            cascade_id=out_cascade_id,
+            payload=output,
+            metadata={'source_step': self.name}
+        )
+        await self.streams['output'].put(out_msg)
 
 class StepJSONSink(SinkStep):
     async def _setup(self):
