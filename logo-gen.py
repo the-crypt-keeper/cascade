@@ -10,8 +10,6 @@ BRAINSTORM_TEMPLATE = '''Let's brainstorm visual ideas for a logo representing t
 
 To spark our imagination, we'll use these random words as inspiration: {{random_basic_words|join(', ')}}, {{random_advanced_words|join(', ')}}
 
-IMPORTANT: DO NOT DIRECTLY MENTION THESE RANDOM WORDS IN YOUR OUTPUT.
-
 Key aspects to consider:
 - Cascade is a streaming pipeline system for content generation
 - Data flows through Steps via named Streams
