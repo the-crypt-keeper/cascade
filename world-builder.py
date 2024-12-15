@@ -117,10 +117,36 @@ async def main():
         },
         params={
             'model': 'gpt-4',
+            'sampler': {
+                'temperature': 0.7,
+                'max_tokens': 2048
+            }
+        }
+    ))
+
+    await cascade.step(StepExpandTemplate(
+        name='expand_extract_template',
+        streams={
+            'input': 'raw_worlds:1',
+            'output': 'extract_prompts'
+        },
+        params={
+            'template': EXTRACT_TEMPLATE
+        }
+    ))
+
+    await cascade.step(StepLLMCompletion(
+        name='extract_world',
+        streams={
+            'input': 'extract_prompts:1',
+            'output': 'raw_structured'
+        },
+        params={
+            'model': 'gpt-4',
             'schema_mode': 'openai-json',
             'schema_json': WORLD_SCHEMA_JSON,
             'sampler': {
-                'temperature': 0.7,
+                'temperature': 0.2,
                 'max_tokens': 2048
             }
         }
@@ -129,7 +155,7 @@ async def main():
     await cascade.step(StepJSONParser(
         name='parse_world',
         streams={
-            'input': 'raw_worlds:1',
+            'input': 'raw_structured:1',
             'output': 'worlds'
         }
     ))
