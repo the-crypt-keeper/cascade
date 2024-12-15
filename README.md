@@ -146,6 +146,13 @@ Parameters:
 - **model**: Name of model to use
 - **tokenizer**: Optional tokenizer name for special formatting
 - **parallel**: Number of parallel workers (default: 1)
+- **schema_mode**: JSON generation mode (default: "none")
+  - **none**: No structured output
+  - **openai-schema**: Use OpenAI function schema
+  - **openai-json**: Force JSON object output
+  - **vllm**: Use vLLM guided JSON
+  - **llama**: Use Llama JSON schema
+- **schema_json**: JSON schema for structured generation modes
 - **sampler**: Dictionary of sampling parameters
   - **temperature**: Sampling temperature
   - **max_tokens**: Maximum tokens to generate
@@ -160,9 +167,18 @@ await cascade.step(StepLLMCompletion(
         'output': 'responses'
     },
     params={
-        'model': 'gemma-2b',
+        'model': 'gpt-4',
         'tokenizer': 'internal:vicuna',
         'parallel': 2,
+        'schema_mode': 'openai-schema',
+        'schema_json': {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"}
+            },
+            "required": ["name", "age"]
+        },
         'sampler': {
             'temperature': 0.7,
             'max_tokens': 1024
