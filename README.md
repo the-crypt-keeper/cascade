@@ -143,8 +143,12 @@ Streams:
 - **output**: Produces model responses
 
 Parameters:
-- **model**: Name of model to use
-- **tokenizer**: Optional tokenizer name for special formatting
+- **model**: *Required* Name of model to use
+- **tokenizer**: Optional tokenizer name to use text-completion instead of chat-completion endpoint
+- **sampler**: Dictionary of sampling parameters
+  - **temperature**: Sampling temperature
+  - **max_tokens**: Maximum tokens to generate
+  - Additional model-specific parameters
 - **parallel**: Number of parallel workers (default: 1)
 - **schema_mode**: JSON generation mode (default: "none")
   - **none**: No structured output
@@ -153,10 +157,6 @@ Parameters:
   - **vllm**: Use vLLM guided JSON
   - **llama**: Use Llama JSON schema
 - **schema_json**: JSON schema for structured generation modes
-- **sampler**: Dictionary of sampling parameters
-  - **temperature**: Sampling temperature
-  - **max_tokens**: Maximum tokens to generate
-  - Additional model-specific parameters
 
 Example:
 ```python
@@ -168,7 +168,6 @@ await cascade.step(StepLLMCompletion(
     },
     params={
         'model': 'gpt-4',
-        'tokenizer': 'internal:vicuna',
         'parallel': 2,
         'schema_mode': 'openai-schema',
         'schema_json': {
