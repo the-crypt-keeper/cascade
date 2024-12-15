@@ -10,3 +10,7 @@ wheels/
 .venv
 .aider*
 .env
+
+# Data
+*.db
+output/
