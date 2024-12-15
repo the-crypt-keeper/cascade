@@ -204,8 +204,8 @@ class StepLLMCompletion(TransformStep):
             
         self.completion_tokenizer = build_tokenizer(self.tokenizer_name) if self.tokenizer_name else None
 
-    async def process(self, msg: Message) -> dict:
-        """Process input through LLM"""
+    async def process(self, msg: Message) -> None:
+        """Process input through LLM and create output messages"""
         messages = [{'role': 'user', 'content': msg.payload}]
         
         if self.completion_tokenizer:
@@ -228,8 +228,22 @@ class StepLLMCompletion(TransformStep):
         )
         
         if answers:
-            return answers[0]
-        return None
+            # Create output message for each answer
+            for i, answer in enumerate(answers):
+                out_cascade_id = msg.derive_cascade_id(
+                    self.name,
+                    index=i,
+                    model=self.model
+                )
+                
+                # Check if we've already processed this
+                if not await self.streams['output'].check_exists(out_cascade_id):
+                    out_msg = Message(
+                        cascade_id=out_cascade_id,
+                        payload=answer,
+                        metadata={'source_step': self.name}
+                    )
+                    await self.streams['output'].put(out_msg)
 
 class StepJSONParser(TransformStep):
     async def _setup(self):
