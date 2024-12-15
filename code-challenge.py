@@ -140,6 +140,7 @@ async def main():
         },
         params={
             'model': 'gemma-2-9b-it-exl2-6.0bpw',
+            'schema_mode': 'openai-json',
             'parallel': 2,
             'sampler': {
                 'temperature': 0.7,
