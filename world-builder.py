@@ -66,11 +66,18 @@ Create a distinct and richly detailed example world using this technique, showca
 
 EXTRACT_TEMPLATE = """Given the following description of an imagined world:
 
+<input>
 {{input}}
+</input>
 
-Respond with all information from the description fully mapped into a JSON object that conforms to the following schema, where all fields are required:
+Map the world description a JSON object that conforms to the following JSON schema:
 
-""" + json.dumps(WORLD_SCHEMA_JSON, indent=2)
+<schema>
+""" + json.dumps(WORLD_SCHEMA_JSON, indent=2) + """
+</schema>
+
+Reply with only the final JSON object. All fields are required.
+"""
 
 IMAGE_TEMPLATE = '''A movie poster with the text "{{world_name}}" at the bottom. {{description}} {{sensory}}'''
 
@@ -116,9 +123,8 @@ async def main():
             'output': 'raw_worlds'
         },
         params={
-            'model': 'gpt-4',
+            'model': 'Cohere-command-r-plus',
             'sampler': {
-                'temperature': 0.7,
                 'max_tokens': 2048
             }
         }
@@ -142,8 +148,8 @@ async def main():
             'output': 'raw_structured'
         },
         params={
-            'model': 'gpt-4',
-            'schema_mode': 'openai-json',
+            'model': 'gemma-2-9b-it-exl2-6.0bpw',
+            'schema_mode': 'openai-schema',
             'schema_json': WORLD_SCHEMA_JSON,
             'sampler': {
                 'temperature': 0.2,
@@ -178,10 +184,10 @@ async def main():
             'output': 'images'
         },
         params={
-            'api_url': 'http://localhost:7860',
+            'api_url': 'http://localhost:5001',
             'width': 768,
             'height': 768,
-            'steps': 30
+            'steps': 8
         }
     ))
     

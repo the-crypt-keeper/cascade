@@ -25,7 +25,7 @@ async def universal_llm_request(completion, model, messages, params):
         # LlamaCpp legacy style response
         answers = [response['content']]
     else:
-        print(response)
+        print("ERROR: Unknown response format:", response)
         answers = None
         
     return answers
