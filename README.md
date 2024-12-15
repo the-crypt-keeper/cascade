@@ -54,6 +54,9 @@ Source steps generate initial data into the pipeline. They have no input streams
 #### StepIdeaSource
 Generates data by sampling from configured sources according to a schema.
 
+Streams:
+- **output**: Produces generated data samples
+
 Parameters:
 - **count**: Number of scenarios to generate (default: 1)
 - **schema**: Dictionary defining data generation rules
@@ -92,6 +95,10 @@ Transform steps process input data and produce transformed output. They support 
 #### StepExpandTemplate
 Expands Jinja2 templates using input data.
 
+Streams:
+- **input**: Receives data for template variables
+- **output**: Produces expanded template text
+
 Parameters:
 - **template**: Jinja2 template string to expand
 
@@ -111,6 +118,10 @@ await cascade.step(StepExpandTemplate(
 
 #### StepLLMCompletion
 Processes text through language models.
+
+Streams:
+- **input**: Receives prompts for completion
+- **output**: Produces model responses
 
 Parameters:
 - **model**: Name of model to use
@@ -144,6 +155,10 @@ await cascade.step(StepLLMCompletion(
 #### StepJSONParser
 Parses and transforms JSON data.
 
+Streams:
+- **input**: Receives JSON text to parse
+- **output**: Produces parsed JSON objects
+
 Parameters:
 - **first_key**: Extract value of first key only
 - **explode_list**: Split list field into separate outputs
@@ -167,6 +182,10 @@ await cascade.step(StepJSONParser(
 
 #### StepText2Image
 Generates images from text descriptions using Stable Diffusion.
+
+Streams:
+- **input**: Receives text prompts
+- **output**: Produces generated images
 
 Parameters:
 - **api_url**: URL of Stable Diffusion API
@@ -198,6 +217,9 @@ Sink steps consume data from the pipeline and perform final processing. They hav
 #### StepJSONSink
 Exports complete cascade histories to JSON files.
 
+Streams:
+- **input**: Receives data to export as JSON
+
 Parameters:
 - **output_dir**: Directory to write JSON files (default: '.')
 
@@ -216,6 +238,9 @@ await cascade.step(StepJSONSink(
 
 #### StepConsoleSink
 Outputs messages directly to console.
+
+Streams:
+- **input**: Receives messages to print
 
 Parameters: None
 
