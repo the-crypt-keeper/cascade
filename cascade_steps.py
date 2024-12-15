@@ -69,8 +69,8 @@ class TransformStep(Step):
                 # Process the message
                 result = await self.process(msg)
                 
-                # Handle simple dict return case with default output
-                if isinstance(result, dict):
+                # Handle simple cases
+                if result is not None:
                     out_cascade_id = msg.derive_cascade_id(self.name)
                     if not await self.streams['output'].check_exists(out_cascade_id):
                         out_msg = Message(
@@ -191,8 +191,9 @@ class StepExpandTemplate(TransformStep):
 
     async def process(self, msg: Message) -> dict:
         """Expand template using input data as context"""
-        return {"text": self.template.render(**msg.payload)}
-    
+        payload = msg.payload if isinstance(msg.payload, dict) else { "input": msg.payload }
+        return self.template.render(**payload)
+
 class StepLLMCompletion(TransformStep):
     async def _setup(self):
         """Initialize LLM completion parameters"""
@@ -277,6 +278,10 @@ class StepJSONParser(TransformStep):
         data = msg.payload
         if not isinstance(data, str):
             return None
+        
+        print("---")
+        print(data)
+        print("---")
 
         # Find JSON boundaries
         sidx = data.find('{')
@@ -341,6 +346,9 @@ class StepText2Image(TransformStep):
         self.steps = int(self.params.get('steps', 20))
 
     async def process(self, msg: Message) -> Dict[str, Any]:
+        # Check if we've already processed this
+        if await self.streams['output'].check_exists(msg.derive_cascade_id(self.name)): return
+
         """Generate image from text prompt"""
         payload = {
             "prompt": msg.payload,
@@ -389,6 +397,8 @@ class StepJSONSink(SinkStep):
         
         # Write JSON file
         with open(filename, 'w') as f:
+            for step, data in history.items():
+                if 'image' in data: del data['image']
             # Include original cascade_id in output for reference
             json.dump({
                 'cascade_id': msg.cascade_id,
