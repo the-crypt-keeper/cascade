@@ -376,21 +376,17 @@ class StepText2Image(TransformStep):
                     
                 result = await response.json()
 
-        output = {
-            'model': self.model,
-            'image': result['images'][0],
-            'metadata': {
+        out_msg = Message(
+            cascade_id=out_cascade_id,
+            payload=result['images'][0],
+            metadata={
+                'source_step': self.name,
+                'model': self.model,
                 'timestamp': time.time(),
                 'width': self.width,
                 'height': self.height,
                 'steps': self.steps
             }
-        }
-
-        out_msg = Message(
-            cascade_id=out_cascade_id,
-            payload=output,
-            metadata={'source_step': self.name}
         )
         await self.streams['output'].put(out_msg)
 
