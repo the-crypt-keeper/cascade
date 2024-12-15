@@ -32,8 +32,24 @@ Please brainstorm creative visual concepts that could work as a logo, considerin
 
 Be specific and detailed in describing potential visual approaches.'''
 
-IMAGE_TEMPLATE = '''A minimalist, professional logo design with the text "CASCADE" prominently featured. {{concept}}
+EXTRACT_TEMPLATE = '''Given the brainstorming output below, extract specific visual design elements for a logo:
 
+<input>
+{{input}}
+</input>
+
+Format your response as a JSON object with these fields:
+{
+  "concept": "Brief description of the core visual concept",
+  "colors": "Specific color palette description",
+  "composition": "Description of layout and arrangement"
+}
+
+Reply with only the JSON object.'''
+
+IMAGE_TEMPLATE = '''A minimalist, professional logo design with the text "CASCADE" prominently featured.
+
+Core Concept: {{concept}}
 Style: Clean, modern, technical
 Colors: {{colors}}
 Composition: {{composition}}'''
@@ -87,10 +103,56 @@ async def main():
         }
     ))
 
+    await cascade.step(StepExpandTemplate(
+        name='expand_extract',
+        streams={
+            'input': 'raw_concepts:1',
+            'output': 'extract_prompts'
+        },
+        params={
+            'template': EXTRACT_TEMPLATE
+        }
+    ))
+
+    await cascade.step(StepLLMCompletion(
+        name='extract_design',
+        streams={
+            'input': 'extract_prompts:1',
+            'output': 'raw_design'
+        },
+        params={
+            'model': 'gemma-2-9b-it-exl2-6.0bpw',
+            'schema_mode': 'openai-json',
+            'sampler': {
+                'temperature': 0.3,
+                'max_tokens': 512
+            }
+        }
+    ))
+
+    await cascade.step(StepJSONParser(
+        name='parse_design',
+        streams={
+            'input': 'raw_design:1',
+            'output': 'designs'
+        }
+    ))
+
+    await cascade.step(StepExpandTemplate(
+        name='expand_image',
+        streams={
+            'input': 'designs:1',
+            'output': 'image_prompts'
+        },
+        params={
+            'template': IMAGE_TEMPLATE
+        }
+    ))
+
     await cascade.step(StepText2Image(
         name='generate_image',
         streams={
-            'input': 'raw_concepts:1',
+            'input': 'image_prompts:1',
             'output': 'images'
         },
         params={
