@@ -45,7 +45,17 @@ See [example-simple.py](example-simple.py) and [code-challenge.py](code-challeng
     - **Stream**: Handles message passing between steps with fair load balancing
     - **CascadeManager**: Coordinates steps and streams, tracks pipeline completion
     - **SQLiteStorage**: Provides persistent storage and idempotency checking
-- `cascade_steps.py`: Provides the core step implementations
+- `cascade_steps.py`: Provides the core step implementations:
+    - Source Steps:
+        - [StepIdeaSource](#stepideasource): Generates data by sampling from configured sources
+    - Transform Steps:
+        - [StepExpandTemplate](#stepexpandtemplate): Expands Jinja2 templates
+        - [StepLLMCompletion](#stepllmcompletion): Processes text through language models
+        - [StepJSONParser](#stepjsonparser): Parses and transforms JSON data
+        - [StepText2Image](#steptext2image): Generates images from text descriptions
+    - Sink Steps:
+        - [StepJSONSink](#stepjsonsink): Exports cascade histories to JSON files
+        - [StepConsoleSink](#stepconsolesink): Outputs messages to console
 
 ### Source Steps
 
