@@ -62,10 +62,15 @@ def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], L
             varying_steps.append(step_name)
         else:
             constant_steps.append(step_name)
-            
-    # Default: use last varying step as compare, others as splits
-    splits = varying_steps[:-1] if varying_steps else [all_steps[0]] if all_steps else []
-    compares = varying_steps[-1:] if varying_steps else []
+    
+    if varying_steps:
+        # If we have varying steps, use last as compare and others as splits
+        splits = varying_steps[:-1]
+        compares = varying_steps[-1:]
+    else:
+        # If no varying steps, use first step as split and last as compare
+        splits = [all_steps[0]] if all_steps else []
+        compares = []
     
     # Always include last step as compare if not already included
     last_step = all_steps[-1] if all_steps else None
