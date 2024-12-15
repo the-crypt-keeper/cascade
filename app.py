@@ -64,7 +64,7 @@ def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], L
             constant_steps.append(step_name)
             
     # Default: use last varying step as compare, others as splits
-    splits = varying_steps[:-1] if varying_steps else []
+    splits = varying_steps[:-1] if varying_steps else [all_steps[0]] if all_steps else []
     compares = varying_steps[-1:] if varying_steps else []
     
     # Always include last step as compare if not already included
@@ -167,9 +167,9 @@ def main():
             help="Steps with varying parameters to compare"
         )
     
-    # Validate compare dimensions
-    if not compares:
-        st.error("Please select at least one compare dimension to analyze the results.")
+    # Validate dimensions
+    if not splits or not compares:
+        st.error("Please select both split and compare dimensions to analyze the results.")
         return
         
     # Group messages
