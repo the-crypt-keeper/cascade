@@ -1,6 +1,8 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import List
+from pydantic import BaseModel, Field
 from cascade_base import Cascade
 from cascade_steps import *
 
@@ -52,23 +54,14 @@ Create a distinct and richly detailed example world using this technique, showca
 
 IMAGE_TEMPLATE = '''A movie poster with the text "{{world_name}}" at the bottom. {{description}} {{sensory}}'''
 
-WORLD_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "world_name": {"type": "string", "description": "The World Name"},
-        "concept": {"type": "string", "description": "The way in which the concept was applied to create this world"},
-        "description": {"type": "string", "description": "Description of the world"},
-        "sensory": {"type": "string", "description": "Specific sensory information about the world"},
-        "challenges_opportunities": {"type": "string", "description": "Difficulties or opportunities faced by inhabitants of this world"},
-        "twist": {"type": "string", "description": "Unique Twist that makes this world interesting"},
-        "story_seeds": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Story ideas or conflicts that could arise in this world"
-        }
-    },
-    "required": ["world_name", "concept", "description", "sensory", "challenges_opportunities", "twist", "story_seeds"]
-}
+class WorldSchema(BaseModel):
+    world_name: str = Field(description="The World Name")
+    concept: str = Field(description="The way in which the concept was applied to create this world")
+    description: str = Field(description="Description of the world")
+    sensory: str = Field(description="Specific sensory information about the world")
+    challenges_opportunities: str = Field(description="Difficulties or opportunities faced by inhabitants of this world")
+    twist: str = Field(description="Unique Twist that makes this world interesting")
+    story_seeds: List[str] = Field(description="Story ideas or conflicts that could arise in this world")
 
 async def main():
     # Create pipeline
@@ -117,7 +110,7 @@ async def main():
         params={
             'model': 'gpt-4',
             'schema_mode': 'openai-schema',
-            'schema_json': WORLD_SCHEMA,
+            'schema_json': WorldSchema.model_json_schema(),
             'sampler': {
                 'temperature': 0.7,
                 'max_tokens': 2048
