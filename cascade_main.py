@@ -10,6 +10,11 @@ class Cascade:
         self.manager = CascadeManager(self.storage, debug=debug)
         self.steps: List[cascade_steps.Step] = []
                 
+    def step(self, step: 'cascade_steps.Step'):
+        """Register and setup a step"""
+        asyncio.create_task(step.setup(self.manager))
+        self.steps.append(step)
+
     def _import_step_class(self, class_name: str) -> Type[cascade_steps.Step]:
         """Dynamically import a step class"""
         module_path, class_name = class_name.rsplit('.', 1)
