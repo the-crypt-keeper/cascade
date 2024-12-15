@@ -372,3 +372,12 @@ class StepJSONSink(SinkStep):
                 'cascade_id': msg.cascade_id,
                 'history': history
             }, f, indent=2)
+
+class StepConsoleSink(SinkStep):
+    async def sink(self, msg: Message):
+        """Write message payload to console with cascade ID header"""
+        print(f"\n=== Message: {msg.cascade_id} ===")
+        if isinstance(msg.payload, (dict, list)):
+            print(json.dumps(msg.payload, indent=2))
+        else:
+            print(msg.payload)
