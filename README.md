@@ -13,6 +13,18 @@ Cascade is a streaming pipeline system for complex content generation tasks. It 
 
 ## How It Works
 
+### Streams and Steps
+
+In the Cascade pipeline, data flows through Steps via named Streams.
+
+Steps can:
+
+- Produce data (Source steps)
+- Consume and transform data (Transform steps)
+- Consume and export data (Sink steps)
+
+Multiple Steps can consume from the same Stream with configurable load balancing strategies.
+
 ### Cascade IDs
 
 The core concept in Cascade is the cascade ID, which tracks the lineage of each piece of data through the pipeline. Cascade IDs are built up as data flows through steps:
@@ -24,15 +36,6 @@ source_step:count=0/transform_step      # After transformation
 ```
 
 This ID system ensures idempotency and enables tracing of data lineage.
-
-### Streams and Steps
-
-Data flows through the pipeline via named streams. Steps can:
-- Produce data into streams (Source steps)
-- Consume and transform data (Transform steps)
-- Consume and export data (Sink steps)
-
-Multiple steps can consume from the same stream with fair load balancing based on cascade ID hashing.
 
 ### Example Usage
 
@@ -246,6 +249,17 @@ await cascade.step(StepJSONSink(
 ))
 ```
 
+Output format:
+```json
+{
+  "cascade_id": "source:count=0/transform",
+  "history": {
+    "source": {"generated": "data"},
+    "transform": "processed result"
+  }
+}
+```
+
 #### StepConsoleSink
 Outputs messages directly to console.
 
@@ -280,118 +294,4 @@ uv sync
 3. Run the pipeline:
 ```bash
 uv run your_pipeline.py
-```
-
-## Step Implementation
-
-Cascade provides three base step types that can be extended to create custom processing steps. All steps support common configuration:
-
-- **name**: Unique identifier for the step
-- **streams**: Input/output stream configuration  
-- **params**: Step-specific parameters
-
-### Source Steps
-
-Source steps generate initial data into the pipeline. They have no input streams and one or more output streams.
-
-Example usage:
-```python
-await cascade.step(StepIdeaSource(
-    name='generate_scenario',
-    streams={'output': 'vars'},
-    params={
-        'count': 5,
-        'schema': {
-            'random_words': {
-                'sample': word_list,
-                'count': 3
-            },
-            'technique': {
-                'sample': techniques,
-                'count': 1
-            }
-        }
-    }
-))
-```
-
-### Transform Steps 
-
-Transform steps process input data and produce transformed output. They support parallel processing through the `parallel` parameter.
-
-Example template expansion:
-```python
-await cascade.step(StepExpandTemplate(
-    name='expand_template',
-    streams={
-        'input': 'vars:1',
-        'output': 'prompts'
-    },
-    params={
-        'template': "Template using {{variable}}"
-    }
-))
-```
-
-Example LLM completion:
-```python
-await cascade.step(StepLLMCompletion(
-    name='generate',
-    streams={
-        'input': 'prompts:1', 
-        'output': 'responses'
-    },
-    params={
-        'model': 'gemma-2b',
-        'parallel': 2,
-        'sampler': {
-            'temperature': 0.7,
-            'max_tokens': 1024
-        }
-    }
-))
-```
-
-Example JSON parsing:
-```python
-await cascade.step(StepJSONParser(
-    name='parse_json',
-    streams={
-        'input': 'responses:1',
-        'output': 'parsed'
-    },
-    params={
-        'first_key': True,  # Extract first key's value
-        'explode_list': 'items',  # Split list into separate outputs
-        'explode_keys': ['key1', 'key2']  # Output keys separately
-    }
-))
-```
-
-### Sink Steps
-
-Sink steps consume data from the pipeline and perform final processing. They have one or more input streams but no outputs.
-
-Example JSON export:
-```python
-await cascade.step(StepJSONSink(
-    name='export_json',
-    streams={
-        'input': 'final_output:1'
-    },
-    params={
-        'output_dir': 'output/results'
-    }
-))
-```
-
-Output format:
-```json
-{
-  "cascade_id": "source:count=0/transform",
-  "history": {
-    "source": {"generated": "data"},
-    "transform": "processed result"
-  }
-}
 ```
