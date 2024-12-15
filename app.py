@@ -104,10 +104,26 @@ def group_by_splits(messages: List[Message], splits: List[int], compares: List[i
         components = parse_cascade_id(msg.cascade_id)
         
         # Build split key
-        split_key = tuple(components[i] for i in splits) if splits else ('all',)
-        
+        if splits:
+            split_components = []
+            for i in splits:
+                name, params = components[i]
+                param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
+                split_components.append((name, param_str))
+            split_key = tuple(split_components)
+        else:
+            split_key = ('all',)
+            
         # Build compare key
-        compare_key = tuple(components[i] for i in compares) if compares else ('value',)
+        if compares:
+            compare_components = []
+            for i in compares:
+                name, params = components[i]
+                param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
+                compare_components.append((name, param_str))
+            compare_key = tuple(compare_components)
+        else:
+            compare_key = ('value',)
         
         # Group messages
         groups[split_key].append((compare_key, msg))
