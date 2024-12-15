@@ -123,7 +123,7 @@ async def main():
             'output': 'raw_worlds'
         },
         params={
-            'model': 'Cohere-command-r-plus',
+            'model': 'Starcannon-Unleashed-12B-v1.0.Q6_K',
             'sampler': {
                 'max_tokens': 2048
             }
