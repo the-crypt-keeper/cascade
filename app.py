@@ -133,9 +133,6 @@ def main():
         st.warning(f"No messages found in stream: {selected_stream}")
         return
         
-    # Analyze cascade paths
-    common, default_splits, default_compares = analyze_cascade_paths(messages)
-    
     # Analyze step variations
     step_params = analyze_step_variations(messages)
     step_names = list(step_params.keys())
@@ -171,9 +168,8 @@ def main():
     for split_key, group in groups.items():
         # Format split key for display
         split_display = []
-        for pos in splits:
-            name, params = components[pos]
-            split_display.append(format_step(name, params))
+        for name, param_str in split_key:
+            split_display.append(f"{name} ({param_str})" if param_str else name)
         st.header(f"Split: {' / '.join(split_display)}")
         
         # Organize by compare keys
@@ -192,16 +188,12 @@ def main():
             with cols[i]:
                 # Format compare key for display
                 compare_display = []
-                for pos in compares:
-                    name, params = components[pos]
-                    compare_display.append(format_step(name, params))
+                for name, param_str in compare_key:
+                    compare_display.append(f"{name} ({param_str})" if param_str else name)
                 st.subheader(f"Compare: {' / '.join(compare_display)}")
                 
                 # Get steps from compare dimensions
-                compare_steps = set()
-                for pos in compares:
-                    name, _ = components[pos]
-                    compare_steps.add(name)
+                compare_steps = set(name for name, _ in compare_key)
                 
                 # Display compare dimension values first
                 for step, data in history.items():
