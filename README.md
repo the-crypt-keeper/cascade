@@ -34,16 +34,15 @@ Data flows through the pipeline via named streams. Steps can:
 
 Multiple steps can consume from the same stream with fair load balancing based on cascade ID hashing.
 
-### Configuration Example
+### Example Usage
 
-See [example-simple.yaml](example-simple.yaml) for a complete example of a simple pipeline that generates some seeds, expands a template and performs and LLM completion.
+See [example-simple.py](example-simple.py) and [code-challenge.py](code-challenge.py) for complete examples of building pipelines using the Python API.
 
 ## Architecture
 
 - `cascade_base.py`
     - **Stream**: Handles message passing between steps with fair load balancing
     - **CascadeManager**: Coordinates steps and streams, tracks pipeline completion
-    - **CascadeLoader**: Configuration and asset loading and parameter resolution
     - **SQLiteStorage**: Provides persistent storage and idempotency checking
 - `cascade_steps.py`: Provides the core step implementations
     - [StepIdeaSource](#stepideasource): Generates data by sampling from configured sources
@@ -51,8 +50,6 @@ See [example-simple.yaml](example-simple.yaml) for a complete example of a simpl
     - [StepLLMCompletion](#stepllmcompletion): Processes text through language models
     - [StepJSONParser](#stepjsonparser): Parses and transforms JSON data
     - [StepJSONSink](#stepjsonsink): Exports complete cascade histories to JSON files
-- `cascade_main.py`
-    - **Cascade**: System entrypoint to load a configuration and run the pipeline.
 
 ## Installation
 
@@ -61,161 +58,118 @@ Cascade uses `uv` for dependency management. To set up:
 ```bash
 # Install dependencies from lock file
 uv sync
-
-# Run pipeline
-uv run main.py example-simple.yaml
 ```
 
 ## Usage
 
-1. Define your pipeline in YAML (see below)
-2. (optional) Implement any custom steps required.
+1. Create a Python script that defines your pipeline
+2. (optional) Implement any custom steps required
 3. Run the pipeline:
 ```bash
-uv run main.py pipeline.yaml
+uv run your_pipeline.py
 ```
 
 ## Step Implementation
 
-Cascade provides three base step types that can be extended to create custom processing steps. All steps support common configuration options:
+Cascade provides three base step types that can be extended to create custom processing steps. All steps support common configuration:
 
 - **name**: Unique identifier for the step
-- **streams**: Input/output stream configuration
+- **streams**: Input/output stream configuration  
 - **params**: Step-specific parameters
 
 ### Source Steps
 
 Source steps generate initial data into the pipeline. They have no input streams and one or more output streams.
 
-Base configuration:
-```yaml
-steps:
-  my_source:
-    class: cascade_steps.MySourceStep
-    streams:
-      output: output_stream
-    params:
-      count: 5  # Number of items to generate
+Example usage:
+```python
+await cascade.step(StepIdeaSource(
+    name='generate_scenario',
+    streams={'output': 'vars'},
+    params={
+        'count': 5,
+        'schema': {
+            'random_words': {
+                'sample': word_list,
+                'count': 3
+            },
+            'technique': {
+                'sample': techniques,
+                'count': 1
+            }
+        }
+    }
+))
 ```
 
-Available implementations:
-
-#### StepIdeaSource
-Generates data by sampling from configured sources:
-
-```yaml
-steps:
-  generate_scenario:
-    class: cascade_steps.StepIdeaSource
-    streams:
-      output: vars
-    params:
-      count: 5
-      schema:
-        random_words: 
-          sample: $assets.word_list
-          count: 3
-        technique: 
-          sample: $assets.techniques
-          count: 1
-```
-
-### Transform Steps
+### Transform Steps 
 
 Transform steps process input data and produce transformed output. They support parallel processing through the `parallel` parameter.
 
-Base configuration:
-```yaml
-steps:
-  my_transform:
-    class: cascade_steps.MyTransformStep
-    streams:
-      input: input_stream:1  # :1 specifies consumer weight
-      output: output_stream
-    params:
-      parallel: 2  # Number of parallel workers
+Example template expansion:
+```python
+await cascade.step(StepExpandTemplate(
+    name='expand_template',
+    streams={
+        'input': 'vars:1',
+        'output': 'prompts'
+    },
+    params={
+        'template': "Template using {{variable}}"
+    }
+))
 ```
 
-Available implementations:
-
-#### StepExpandTemplate
-Expands Jinja2 templates using input data:
-
-```yaml
-steps:
-  expand_template:
-    class: cascade_steps.StepExpandTemplate
-    streams:
-      input: vars:1
-      output: prompts
-    params:
-      template: "Template using {{variable}}"
+Example LLM completion:
+```python
+await cascade.step(StepLLMCompletion(
+    name='generate',
+    streams={
+        'input': 'prompts:1', 
+        'output': 'responses'
+    },
+    params={
+        'model': 'gemma-2b',
+        'parallel': 2,
+        'sampler': {
+            'temperature': 0.7,
+            'max_tokens': 1024
+        }
+    }
+))
 ```
 
-#### StepLLMCompletion
-Processes text through language models:
-
-```yaml
-steps:
-  generate:
-    class: cascade_steps.StepLLMCompletion
-    streams:
-      input: prompts:1
-      output: responses
-    params:
-      model: "mistral"
-      tokenizer: "mistral"  # Optional
-      parallel: 2
-      sampler:
-        temperature: 0.7
-        max_tokens: 1024
-```
-
-#### StepJSONParser
-Parses and transforms JSON data:
-
-```yaml
-steps:
-  parse_json:
-    class: cascade_steps.StepJSONParser
-    streams:
-      input: responses:1
-      output: parsed
-    params:
-      first_key: true  # Extract first key's value
-      explode_list: "items"  # Split list into separate outputs
-      explode_keys: ["key1", "key2"]  # Output keys separately
-      parallel: 2
+Example JSON parsing:
+```python
+await cascade.step(StepJSONParser(
+    name='parse_json',
+    streams={
+        'input': 'responses:1',
+        'output': 'parsed'
+    },
+    params={
+        'first_key': True,  # Extract first key's value
+        'explode_list': 'items',  # Split list into separate outputs
+        'explode_keys': ['key1', 'key2']  # Output keys separately
+    }
+))
 ```
 
 ### Sink Steps
 
 Sink steps consume data from the pipeline and perform final processing. They have one or more input streams but no outputs.
 
-Base configuration:
-```yaml
-steps:
-  my_sink:
-    class: cascade_steps.MySinkStep
-    streams:
-      input: input_stream:1
-    params:
-      output_dir: "output/"
-```
-
-Available implementations:
-
-#### StepJSONSink
-Exports complete cascade histories to JSON files:
-
-```yaml
-steps:
-  export_json:
-    class: cascade_steps.StepJSONSink
-    streams:
-      input: final_output:1
-    params:
-      output_dir: output/results
+Example JSON export:
+```python
+await cascade.step(StepJSONSink(
+    name='export_json',
+    streams={
+        'input': 'final_output:1'
+    },
+    params={
+        'output_dir': 'output/results'
+    }
+))
 ```
 
 Output format:
