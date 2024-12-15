@@ -8,6 +8,7 @@ from pathlib import Path
 import hashlib
 import time
 import aiohttp
+import os
 
 from cascade_base import *
 from cascade_utils import build_tokenizer, universal_llm_request
@@ -333,17 +334,26 @@ class StepJSONParser(TransformStep):
 class StepText2Image(TransformStep):
     async def _setup(self):
         """Initialize image generation parameters"""
-        if 'api_url' not in self.params:
-            raise ValueError(f"StepText2Image {self.name} requires 'api_url' parameter")
-        
-        self.api_url = self.params['api_url']
+        # Get API URL from environment or params
+        self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:7860'))
         self.width = int(self.params.get('width', 512))
         self.height = int(self.params.get('height', 512))
         self.steps = int(self.params.get('steps', 20))
+        
+        # Fetch current model info
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.api_url}/sdapi/v1/sd-models") as response:
+                if response.status != 200:
+                    raise Exception(f"Failed to fetch SD models: {response.status}")
+                models = await response.json()
+                if not models:
+                    raise Exception("No SD models found")
+                self.model = models[0]['model_name']
 
     async def process(self, msg: Message) -> Dict[str, Any]:
-        # Check if we've already processed this
-        if await self.streams['output'].check_exists(msg.derive_cascade_id(self.name)): return
+        # Check if we've already processed this with current model
+        if await self.streams['output'].check_exists(msg.derive_cascade_id(self.name, model=self.model)): 
+            return
 
         """Generate image from text prompt"""
         payload = {
@@ -362,8 +372,9 @@ class StepText2Image(TransformStep):
                     raise Exception(f"Image API request failed with status code {response.status}")
                     
                 result = await response.json()
-        
+                
         return {
+            'model': self.model,
             'image': result['images'][0],
             'metadata': {
                 'timestamp': time.time(),
