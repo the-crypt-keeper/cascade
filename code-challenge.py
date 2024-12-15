@@ -4,8 +4,8 @@ from cascade_steps import *
 from pathlib import Path
 
 # Load assets
-BASIC_WORDS = open('assets/basic.txt').readlines()
-ADVANCED_WORDS = open('assets/advanced.txt').readlines()
+BASIC_WORDS = open('assets/basic.txt').read().splitlines()
+ADVANCED_WORDS = open('assets/advanced.txt').read().splitlines()
 
 # Templates
 IDEA_TEMPLATE = '''
