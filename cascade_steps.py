@@ -13,7 +13,7 @@ from cascade_base import *
 from cascade_utils import build_tokenizer, universal_llm_request
 
 class Step(ABC):
-    def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any]):
+    def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any] = {}):
         self.name = name
         self.stream_configs = streams
         self.params = params
@@ -51,7 +51,7 @@ class Step(ABC):
         pass
 
 class TransformStep(Step):
-    def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any]):
+    def __init__(self, name: str, streams: Dict[str, str], params: Dict[str, Any] = {}):
         super().__init__(name, streams, params)
         self.parallel = int(params.get('parallel', 1))
         
@@ -236,20 +236,12 @@ class StepLLMCompletion(TransformStep):
         if answers:
             # Create output message for each answer
             for i, answer in enumerate(answers):
-                out_cascade_id = msg.derive_cascade_id(
-                    self.name,
-                    index=i,
-                    model=self.model
+                out_msg = Message(
+                    cascade_id=msg.derive_cascade_id(self.name, index=i, model=self.model),
+                    payload=answer,
+                    metadata={'source_step': self.name}
                 )
-                
-                # Check if we've already processed this
-                if not await self.streams['output'].check_exists(out_cascade_id):
-                    out_msg = Message(
-                        cascade_id=out_cascade_id,
-                        payload=answer,
-                        metadata={'source_step': self.name}
-                    )
-                    await self.streams['output'].put(out_msg)
+                await self.streams['output'].put(out_msg)
 
 class StepJSONParser(TransformStep):
     async def _setup(self):
