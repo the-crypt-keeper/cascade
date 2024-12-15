@@ -5,8 +5,8 @@ import os
 API_BASE_URL = os.getenv('OPENAI_BASE_URL',"http://100.109.96.89:3333/v1")
 API_KEY = os.getenv('OPENAI_API_KEY', "xx-ignored")
 
-async def universal_llm_request(completion, model, messages, params, n):
-    payload = { 'model': model, 'n': n, 'messages': messages, **params }
+async def universal_llm_request(completion, model, messages, params):
+    payload = { 'model': model, 'messages': messages, **params }
     headers = { 'Authentication': 'Bearer '+API_KEY }
 
     async with aiohttp.ClientSession() as session:

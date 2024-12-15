@@ -17,7 +17,7 @@ steps:
     streams:
       output: vars
     params:
-      count: 2  # Using base SourceStep count parameter
+      count: 10
       schema:
         random_basic_words: 
           sample: $assets.basic_words
@@ -41,6 +41,7 @@ steps:
       output: responses
     params:
       model: "Meta-Llama-3.1-405B-Instruct"
+      parallel: 2
       sampler:
         temperature: 0.7
         max_tokens: 2048
@@ -50,4 +51,4 @@ steps:
     streams:
       input: responses:1
     params:
-      output_dir: output/scenarios
+      output_dir: output/simple

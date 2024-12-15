@@ -223,8 +223,7 @@ class StepLLMCompletion(TransformStep):
             self.completion_tokenizer is not None,
             self.model,
             messages,
-            self.sampler,
-            1
+            self.sampler
         )
         
         if answers:
