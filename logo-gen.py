@@ -2,7 +2,15 @@ import asyncio
 from cascade_base import Cascade
 from cascade_steps import *
 
+# Load assets
+BASIC_WORDS = open('assets/basic.txt').read().splitlines()
+ADVANCED_WORDS = open('assets/advanced.txt').read().splitlines()
+
 BRAINSTORM_TEMPLATE = '''Let's brainstorm visual ideas for a logo representing the Cascade system.
+
+To spark our imagination, we'll use these random words as inspiration: {{random_basic_words|join(', ')}}, {{random_advanced_words|join(', ')}}
+
+IMPORTANT: DO NOT DIRECTLY MENTION THESE RANDOM WORDS IN YOUR OUTPUT.
 
 Key aspects to consider:
 - Cascade is a streaming pipeline system for content generation
@@ -43,9 +51,14 @@ async def main():
         params={
             'count': 5,
             'schema': {
-                'concept': {'constant': ''},
-                'colors': {'constant': ''},
-                'composition': {'constant': ''}
+                'random_basic_words': {
+                    'sample': BASIC_WORDS,
+                    'count': 3
+                },
+                'random_advanced_words': {
+                    'sample': ADVANCED_WORDS,
+                    'count': 3
+                }
             }
         }
     ))
@@ -76,45 +89,10 @@ async def main():
         }
     ))
 
-    await cascade.step(StepLLMCompletion(
-        name='extract_visual',
-        streams={
-            'input': 'raw_concepts:1',
-            'output': 'visual_specs'
-        },
-        params={
-            'model': 'gemma-2-9b-it-exl2-6.0bpw',
-            'schema_mode': 'openai-json',
-            'sampler': {
-                'temperature': 0.4,
-                'max_tokens': 512
-            }
-        }
-    ))
-
-    await cascade.step(StepJSONParser(
-        name='parse_visual',
-        streams={
-            'input': 'visual_specs:1',
-            'output': 'parsed_specs'
-        }
-    ))
-    
-    await cascade.step(StepExpandTemplate(
-        name='expand_image',
-        streams={
-            'input': 'parsed_specs:1',
-            'output': 'image_prompts'
-        },
-        params={
-            'template': IMAGE_TEMPLATE
-        }
-    ))
-    
     await cascade.step(StepText2Image(
         name='generate_image',
         streams={
-            'input': 'image_prompts:1',
+            'input': 'raw_concepts:1',
             'output': 'images'
         },
         params={
