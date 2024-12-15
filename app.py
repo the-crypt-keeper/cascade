@@ -167,6 +167,11 @@ def main():
             help="Steps with varying parameters to compare"
         )
     
+    # Validate compare dimensions
+    if not compares:
+        st.error("Please select at least one compare dimension to analyze the results.")
+        return
+        
     # Group messages
     groups = group_by_splits(messages, splits, compares)
     
