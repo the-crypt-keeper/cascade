@@ -275,56 +275,38 @@ class CascadeManager:
                     result[step_name] = msg.payload
                     
         return result
-            
-class CascadeLoader:
-    def __init__(self, config_path: Path):
-        self.config_path = config_path
-        self.base_path = config_path.parent
-        self.assets = {}
+
+class Cascade:
+    def __init__(self, project_name, debug: bool = False):
+        self.storage = SQLiteStorage(project_name+'.db')
+        self.manager = CascadeManager(self.storage, debug=debug)
+        self.steps = []
+                
+    async def step(self, step):
+        """Register and setup a step"""
+        await step.setup(self.manager)
+        self.steps.append(step)
+
+    async def run(self):
+        # Restore any existing state
+        await self.manager.restore_state()
         
-    def load(self) -> Dict[str, Any]:
-        """Load and resolve complete pipeline configuration"""
-        # Load raw config
-        with open(self.config_path) as f:
-            config = yaml.safe_load(f)
+        """Run all steps until completion"""
+        try:
+            # Start all steps
+            tasks = [asyncio.create_task(step.run()) for step in self.steps]
             
-        # Load assets
-        for key, spec in config['assets'].items():
-            self.assets[key] = self._load_asset(spec)
+            # Wait for completion
+            await self.manager.wait_for_completion()
             
-        # Resolve asset references in step params
-        resolved_steps = {}
-        for step_name, step_config in config['steps'].items():
-            resolved_steps[step_name] = {
-                'class': step_config['class'],
-                'streams': step_config['streams'],
-                'params': self._resolve_references(step_config.get('params', {}))
-            }
-            
-        return {
-            'assets': self.assets,
-            'steps': resolved_steps
-        }
-        
-    def _load_asset(self, spec: str) -> Any:
-        """Load an asset from file or inline content"""
-        if isinstance(spec, str) and spec.startswith('file://'):
-            path = self.base_path / spec[7:]
-            with open(path) as f:
-                if path.suffix == '.json':
-                    return json.load(f)
-                elif path.suffix == '.txt':
-                    return [line.strip() for line in f if line.strip()]
-                else:
-                    return f.read()
-        return spec
-        
-    def _resolve_references(self, config: Any) -> Any:
-        """Recursively resolve all $assets references in config"""
-        if isinstance(config, dict):
-            return {k: self._resolve_references(v) for k, v in config.items()}
-        elif isinstance(config, list):
-            return [self._resolve_references(v) for v in config]
-        elif isinstance(config, str) and config.startswith('$assets.'):
-            return self.assets[config[8:]]
-        return config
+            # Cancel all tasks
+            for task in tasks:
+                task.cancel()
+                
+            # Wait for tasks to finish
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+        finally:
+            # Ensure steps are shutdown
+            for step in self.steps:
+                await step.shutdown()

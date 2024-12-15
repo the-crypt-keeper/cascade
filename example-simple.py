@@ -1,5 +1,5 @@
 import asyncio
-from cascade_main import Cascade
+from cascade_base import Cascade
 from cascade_steps import *
 
 # Load assets
@@ -17,7 +17,7 @@ The short story should have a title and be 3 paragraphs long.
 
 async def main():
     # Create pipeline
-    cascade = Cascade(config_path=Path('example-simple'))
+    cascade = Cascade(project_name='example-simple')
     
     # Define steps
     await cascade.step(StepIdeaSource(

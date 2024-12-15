@@ -1,5 +1,5 @@
 import asyncio
-from cascade_main import Cascade
+from cascade_base import Cascade
 from cascade_steps import *
 from pathlib import Path
 
@@ -100,7 +100,7 @@ Remember to think step-by-step, starting from step 1!
 
 async def main():
     # Create pipeline
-    cascade = Cascade(config_path=Path('code-challenge'))
+    cascade = Cascade(project_name='code-challenge')
     
     # Define steps
     await cascade.step(StepIdeaSource(
