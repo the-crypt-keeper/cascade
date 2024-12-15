@@ -41,15 +41,193 @@ See [example-simple.py](example-simple.py) and [code-challenge.py](code-challeng
 ## Architecture
 
 - `cascade_base.py`
+    - **Cascade**: Main pipeline class for constructing and running pipelines
     - **Stream**: Handles message passing between steps with fair load balancing
     - **CascadeManager**: Coordinates steps and streams, tracks pipeline completion
     - **SQLiteStorage**: Provides persistent storage and idempotency checking
 - `cascade_steps.py`: Provides the core step implementations
-    - [StepIdeaSource](#stepideasource): Generates data by sampling from configured sources
-    - [StepExpandTemplate](#stepexpandtemplate): Expands Jinja2 templates using input data
-    - [StepLLMCompletion](#stepllmcompletion): Processes text through language models
-    - [StepJSONParser](#stepjsonparser): Parses and transforms JSON data
-    - [StepJSONSink](#stepjsonsink): Exports complete cascade histories to JSON files
+
+### Source Steps
+
+Source steps generate initial data into the pipeline. They have no input streams and one or more output streams.
+
+#### StepIdeaSource
+Generates data by sampling from configured sources according to a schema.
+
+Parameters:
+- **count**: Number of scenarios to generate (default: 1)
+- **schema**: Dictionary defining data generation rules
+  - Each key defines a field to generate
+  - Values can be:
+    - **sample**: List to sample from
+    - **count**: Number of items to sample
+    - **always_array**: Always return as array even if count=1
+    - **constant**: Fixed value to use
+
+Example:
+```python
+await cascade.step(StepIdeaSource(
+    name='generate_scenario',
+    streams={'output': 'vars'},
+    params={
+        'count': 5,
+        'schema': {
+            'random_words': {
+                'sample': word_list,
+                'count': 3,
+                'always_array': True
+            },
+            'constant_value': {
+                'constant': 'fixed string'
+            }
+        }
+    }
+))
+```
+
+### Transform Steps
+
+Transform steps process input data and produce transformed output. They support parallel processing through the `parallel` parameter.
+
+#### StepExpandTemplate
+Expands Jinja2 templates using input data.
+
+Parameters:
+- **template**: Jinja2 template string to expand
+
+Example:
+```python
+await cascade.step(StepExpandTemplate(
+    name='expand_template',
+    streams={
+        'input': 'vars:1',
+        'output': 'prompts'
+    },
+    params={
+        'template': "Template using {{variable}}"
+    }
+))
+```
+
+#### StepLLMCompletion
+Processes text through language models.
+
+Parameters:
+- **model**: Name of model to use
+- **tokenizer**: Optional tokenizer name for special formatting
+- **parallel**: Number of parallel workers (default: 1)
+- **sampler**: Dictionary of sampling parameters
+  - **temperature**: Sampling temperature
+  - **max_tokens**: Maximum tokens to generate
+  - Additional model-specific parameters
+
+Example:
+```python
+await cascade.step(StepLLMCompletion(
+    name='generate',
+    streams={
+        'input': 'prompts:1',
+        'output': 'responses'
+    },
+    params={
+        'model': 'gemma-2b',
+        'tokenizer': 'internal:vicuna',
+        'parallel': 2,
+        'sampler': {
+            'temperature': 0.7,
+            'max_tokens': 1024
+        }
+    }
+))
+```
+
+#### StepJSONParser
+Parses and transforms JSON data.
+
+Parameters:
+- **first_key**: Extract value of first key only
+- **explode_list**: Split list field into separate outputs
+- **explode_keys**: List of keys to output separately
+
+Example:
+```python
+await cascade.step(StepJSONParser(
+    name='parse_json',
+    streams={
+        'input': 'responses:1',
+        'output': 'parsed'
+    },
+    params={
+        'first_key': True,
+        'explode_list': 'items',
+        'explode_keys': ['key1', 'key2']
+    }
+))
+```
+
+#### StepText2Image
+Generates images from text descriptions using Stable Diffusion.
+
+Parameters:
+- **api_url**: URL of Stable Diffusion API
+- **width**: Image width (default: 512)
+- **height**: Image height (default: 512)
+- **steps**: Number of diffusion steps (default: 20)
+
+Example:
+```python
+await cascade.step(StepText2Image(
+    name='generate_image',
+    streams={
+        'input': 'prompts:1',
+        'output': 'images'
+    },
+    params={
+        'api_url': 'http://localhost:7860',
+        'width': 768,
+        'height': 768,
+        'steps': 30
+    }
+))
+```
+
+### Sink Steps
+
+Sink steps consume data from the pipeline and perform final processing. They have one or more input streams but no outputs.
+
+#### StepJSONSink
+Exports complete cascade histories to JSON files.
+
+Parameters:
+- **output_dir**: Directory to write JSON files (default: '.')
+
+Example:
+```python
+await cascade.step(StepJSONSink(
+    name='export_json',
+    streams={
+        'input': 'final_output:1'
+    },
+    params={
+        'output_dir': 'output/results'
+    }
+))
+```
+
+#### StepConsoleSink
+Outputs messages directly to console.
+
+Parameters: None
+
+Example:
+```python
+await cascade.step(StepConsoleSink(
+    name='console',
+    streams={
+        'input': 'responses:1'
+    }
+))
+```
 
 ## Installation
 
