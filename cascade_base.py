@@ -177,6 +177,15 @@ class CascadeManager:
         self.streams[name] = Stream(name, self.storage)
         return self.streams[name]
     
+    def stream(self, name: str) -> Stream:
+        """Create or get a stream by name"""
+        return self.manager.create_stream(name)
+        
+    def step(self, step: 'cascade_steps.Step'):
+        """Register and setup a step"""
+        asyncio.create_task(step.setup(self.manager))
+        self.steps.append(step)
+        
     def get_stream(self, name: str) -> Stream:
         if name not in self.streams:
             raise ValueError(f"Stream {name} does not exist")
