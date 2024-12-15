@@ -90,7 +90,7 @@ async def main():
         name='generate_scenario',
         streams={'output': 'vars'},
         params={
-            'count': 1,
+            'count': 10,
             'schema': {
                 'random_words': {
                     'sample': BASIC_WORDS + ADVANCED_WORDS,

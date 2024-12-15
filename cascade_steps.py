@@ -279,10 +279,6 @@ class StepJSONParser(TransformStep):
         if not isinstance(data, str):
             return None
         
-        print("---")
-        print(data)
-        print("---")
-
         # Find JSON boundaries
         sidx = data.find('{')
         eidx = data.rfind('}')
