@@ -72,12 +72,13 @@ class TransformStep(Step):
                 # Handle simple dict return case with default output
                 if isinstance(result, dict):
                     out_cascade_id = msg.derive_cascade_id(self.name)
-                    out_msg = Message(
-                        cascade_id=out_cascade_id,
-                        payload=result,
-                        metadata={'source_step': self.name}
-                    )
-                    await self.streams['output'].put(out_msg)
+                    if not await self.streams['output'].check_exists(out_cascade_id):
+                        out_msg = Message(
+                            cascade_id=out_cascade_id,
+                            payload=result,
+                            metadata={'source_step': self.name}
+                        )
+                        await self.streams['output'].put(out_msg)
                 
             except asyncio.CancelledError:
                 break
@@ -206,6 +207,12 @@ class StepLLMCompletion(TransformStep):
 
     async def process(self, msg: Message) -> None:
         """Process input through LLM and create output messages"""
+        
+        # Check if output0 for this model already exists.
+        out0_cascade_id = msg.derive_cascade_id(self.name, index=0, model=self.model)
+        if await self.streams['output'].check_exists(out0_cascade_id):
+            return
+
         messages = [{'role': 'user', 'content': msg.payload}]
         
         if self.completion_tokenizer:

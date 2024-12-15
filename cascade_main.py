@@ -12,7 +12,7 @@ class Cascade:
                 
     def step(self, step: 'cascade_steps.Step'):
         """Register and setup a step"""
-        asyncio.create_task(step.setup(self.manager))
+        step.setup(self.manager)
         self.steps.append(step)
 
     def _import_step_class(self, class_name: str) -> Type[cascade_steps.Step]:
@@ -36,7 +36,7 @@ class Cascade:
                 streams.add(stream_name)
                 
         for stream in streams:
-            self.manager.create_stream(stream)
+            self.manager.get_stream(stream)
             
         # Create and setup all steps
         for step_name, step_config in config['steps'].items():

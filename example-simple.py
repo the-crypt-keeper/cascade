@@ -1,12 +1,6 @@
 import asyncio
-from pathlib import Path
 from cascade_main import Cascade
-from cascade_steps import (
-    StepIdeaSource, 
-    StepExpandTemplate,
-    StepLLMCompletion,
-    StepConsoleSink
-)
+from cascade_steps import *
 
 # Load assets
 with open('assets/basic.txt') as f:
@@ -27,13 +21,7 @@ The short story should have a title and be 3 paragraphs long.
 
 async def main():
     # Create pipeline
-    cascade = Cascade(config_path=None)
-    await cascade.setup()
-    
-    # Create streams
-    vars = cascade.stream('vars')
-    prompts = cascade.stream('prompts') 
-    responses = cascade.stream('responses')
+    cascade = Cascade(config_path=Path('example-simple'))
     
     # Define steps
     cascade.step(StepIdeaSource(

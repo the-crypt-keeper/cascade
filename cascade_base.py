@@ -181,7 +181,7 @@ class CascadeManager:
         """Restore streams from storage on startup"""
         stream_names = await self.storage.get_all_streams()
         for name in stream_names:
-            stream = self.create_stream(name)
+            stream = self.get_stream(name)
             messages = await self.storage.get_all_messages(name)
             for msg in messages:
                 await stream.put(msg, _no_store=True)
