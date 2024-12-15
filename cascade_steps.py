@@ -388,18 +388,32 @@ class StepJSONSink(SinkStep):
         return hashlib.md5(cascade_id.encode('utf-8')).hexdigest() + '.json'
 
     async def sink(self, msg: Message):
-        """Write JSON file containing full cascade history"""
+        """Write JSON file containing full cascade history and save images"""
         # Get the full cascade history
         history = await self.manager.unroll(msg)
         
-        # Generate output filename using MD5 hash
-        filename = self.output_dir / self._make_filename(msg.cascade_id)
+        # Generate base filename using MD5 hash
+        base_hash = self._make_filename(msg.cascade_id).replace('.json', '')
         
-        # Write JSON file
-        with open(filename, 'w') as f:
-            for step, data in history.items():
-                if 'image' in data: del data['image']
-            # Include original cascade_id in output for reference
+        # Save any images to PNG files
+        for step, data in history.items():
+            if 'image' in data:
+                # Save image data to PNG file
+                image_filename = f"{base_hash}_{step}.png"
+                image_path = self.output_dir / image_filename
+                
+                # Decode base64 image and write to file
+                import base64
+                image_data = base64.b64decode(data['image'])
+                with open(image_path, 'wb') as f:
+                    f.write(image_data)
+                    
+                # Replace image data with filename
+                data['image'] = image_filename
+        
+        # Write JSON file with modified history
+        json_path = self.output_dir / f"{base_hash}.json"
+        with open(json_path, 'w') as f:
             json.dump({
                 'cascade_id': msg.cascade_id,
                 'history': history
