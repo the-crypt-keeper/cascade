@@ -55,6 +55,7 @@ def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], L
     """Suggest split and compare dimensions based on parameter variations"""
     varying_steps = []
     constant_steps = []
+    all_steps = list(step_params.keys())
     
     for step_name, param_variations in step_params.items():
         if len(param_variations) > 1:
@@ -65,6 +66,11 @@ def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], L
     # Default: use last varying step as compare, others as splits
     splits = varying_steps[:-1] if varying_steps else []
     compares = varying_steps[-1:] if varying_steps else []
+    
+    # Always include last step as compare if not already included
+    last_step = all_steps[-1] if all_steps else None
+    if last_step and last_step not in compares:
+        compares.append(last_step)
     
     return splits, compares
 
