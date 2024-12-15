@@ -337,7 +337,7 @@ class StepText2Image(TransformStep):
     async def _setup(self):
         """Initialize image generation parameters"""
         # Get API URL from environment or params
-        self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:7860'))
+        self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:5001'))
         self.width = int(self.params.get('width', 512))
         self.height = int(self.params.get('height', 512))
         self.steps = int(self.params.get('steps', 20))

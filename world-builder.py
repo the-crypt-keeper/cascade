@@ -184,7 +184,6 @@ async def main():
             'output': 'images'
         },
         params={
-            'api_url': 'http://localhost:5001',
             'width': 768,
             'height': 768,
             'steps': 8
