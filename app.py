@@ -200,17 +200,19 @@ def main():
                     if step in compare_steps:
                         st.write(f"**{step}:**")
                         if isinstance(data, dict) and 'image' in data:
-                            # Handle image data
-                            image_path = Path(project_name).parent / data['image']
-                            if image_path.exists():
-                                st.image(str(image_path))
-                            else:
-                                st.warning(f"Image not found: {image_path}")
-                                
-                            # Show other metadata
-                            other_data = {k:v for k,v in data.items() if k != 'image'}
-                            if other_data:
-                                st.json(other_data)
+                            # Handle base64 image data
+                            import base64
+                            from io import BytesIO
+                            try:
+                                image_bytes = base64.b64decode(data['image'])
+                                st.image(image_bytes)
+                                    
+                                # Show other metadata
+                                other_data = {k:v for k,v in data.items() if k != 'image'}
+                                if other_data:
+                                    st.json(other_data)
+                            except Exception as e:
+                                st.error(f"Failed to decode image: {e}")
                         elif isinstance(data, (dict, list)):
                             # Show JSON data
                             st.json(data)
@@ -225,17 +227,19 @@ def main():
                         for step, data in other_history.items():
                             st.write(f"**{step}:**")
                             if isinstance(data, dict) and 'image' in data:
-                                # Handle image data
-                                image_path = Path(project_name).parent / data['image']
-                                if image_path.exists():
-                                    st.image(str(image_path))
-                                else:
-                                    st.warning(f"Image not found: {image_path}")
+                                # Handle base64 image data
+                                import base64
+                                from io import BytesIO
+                                try:
+                                    image_bytes = base64.b64decode(data['image'])
+                                    st.image(image_bytes)
                                     
-                                # Show other metadata
-                                other_data = {k:v for k,v in data.items() if k != 'image'}
-                                if other_data:
-                                    st.json(other_data)
+                                    # Show other metadata
+                                    other_data = {k:v for k,v in data.items() if k != 'image'}
+                                    if other_data:
+                                        st.json(other_data)
+                                except Exception as e:
+                                    st.error(f"Failed to decode image: {e}")
                             elif isinstance(data, (dict, list)):
                                 # Show JSON data
                                 st.json(data)
