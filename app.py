@@ -6,40 +6,43 @@ from collections import defaultdict
 from typing import Dict, List, Set, Tuple
 from cascade_base import Cascade, Message
 
-def parse_step_component(component: str) -> Tuple[str, Dict[str, str]]:
-    """Parse a step component into name and parameters"""
-    if ':' in component:
-        name, param_str = component.split(':', 1)
+def parse_step(step: str) -> Tuple[str, Dict[str, str]]:
+    """Parse a step into name and parameters"""
+    if ':' in step:
+        name, param_str = step.split(':', 1)
         params = dict(p.split('=') for p in param_str.split(','))
         return name, params
-    return component, {}
+    return step, {}
 
 def parse_cascade_id(cascade_id: str) -> List[Tuple[str, Dict[str, str]]]:
-    """Split cascade ID into components, handling merge nodes and parameters"""
-    components = []
-    current = ""
+    """Split cascade ID into step components"""
+    if not cascade_id:
+        return []
     
-    i = 0
-    while i < len(cascade_id):
-        if cascade_id[i] == '[':
-            # Skip merge nodes
-            merge_end = cascade_id.index(']', i)
-            i = merge_end + 1
-            if i < len(cascade_id) and cascade_id[i] == '/':
-                i += 1
-        else:
-            if cascade_id[i] == '/':
-                if current:
-                    components.append(parse_step_component(current))
-                    current = ""
+    steps = []
+    for step in cascade_id.split('/'):
+        # Skip empty steps and merge nodes
+        if not step or step.startswith('['):
+            continue
+        steps.append(parse_step(step))
+    return steps
+
+def analyze_step_variations(messages: List[Message]) -> Dict[str, Set[str]]:
+    """Find all unique step names and their parameter variations"""
+    step_params: Dict[str, Set[str]] = {}
+    
+    for msg in messages:
+        steps = parse_cascade_id(msg.cascade_id)
+        for name, params in steps:
+            if name not in step_params:
+                step_params[name] = set()
+            if params:
+                param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items()))
+                step_params[name].add(param_str)
             else:
-                current += cascade_id[i]
-            i += 1
-            
-    if current:
-        components.append(parse_step_component(current))
-        
-    return components
+                step_params[name].add("")
+                
+    return step_params
 
 def format_step(name: str, params: Dict[str, str]) -> str:
     """Format step name and parameters for display"""
@@ -48,53 +51,22 @@ def format_step(name: str, params: Dict[str, str]) -> str:
         return f"{name} ({param_str})"
     return name
 
-def analyze_cascade_paths(messages: List[Message]) -> Tuple[List[str], List[str], List[str]]:
-    """Analyze cascade paths to identify common and unique components"""
-    # Get all unique values for each position
-    position_values: Dict[int, Set[str]] = defaultdict(set)
+def get_step_suggestions(step_params: Dict[str, Set[str]]) -> Tuple[List[str], List[str]]:
+    """Suggest split and compare dimensions based on parameter variations"""
+    varying_steps = []
+    constant_steps = []
     
-    # Parse all cascade IDs
-    parsed_paths = [parse_cascade_id(msg.cascade_id) for msg in messages]
-    
-    # Find unique values at each position
-    for path in parsed_paths:
-        for i, (name, params) in enumerate(path):
-            # Convert to hashable format (name + sorted param string)
-            param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
-            hashable = (name, param_str) if param_str else name
-            position_values[i].add(hashable)
-            
-    # Categorize positions
-    common = []  # Same value in all paths
-    unique = []  # Different values across paths
-    
-    max_len = max(len(path) for path in parsed_paths)
-    
-    for i in range(max_len):
-        if len(position_values[i]) == 1:
-            # Convert back to name, params format
-            value = list(position_values[i])[0]
-            if isinstance(value, tuple):
-                name, param_str = value
-                params = dict(p.split('=') for p in param_str.split(',')) if param_str else {}
-                common.append((name, params))
-            else:
-                common.append((value, {}))
+    for step_name, param_variations in step_params.items():
+        if len(param_variations) > 1:
+            varying_steps.append(step_name)
         else:
-            unique.append(i)
+            constant_steps.append(step_name)
             
-    # Default split/compare assignment
-    if len(unique) == 0:
-        splits = []
-        compares = []
-    elif len(unique) == 1:
-        splits = [unique[0]]
-        compares = []
-    else:
-        splits = unique[:-1]
-        compares = [unique[-1]]
-        
-    return common, splits, compares
+    # Default: use last varying step as compare, others as splits
+    splits = varying_steps[:-1] if varying_steps else []
+    compares = varying_steps[-1:] if varying_steps else []
+    
+    return splits, compares
 
 def group_by_splits(messages: List[Message], splits: List[int], compares: List[int]) -> Dict:
     """Group messages by split dimensions"""
@@ -164,14 +136,12 @@ def main():
     # Analyze cascade paths
     common, default_splits, default_compares = analyze_cascade_paths(messages)
     
-    # Get all possible split/compare positions
-    components = parse_cascade_id(messages[0].cascade_id)
-    all_positions = list(range(len(components)))
+    # Analyze step variations
+    step_params = analyze_step_variations(messages)
+    step_names = list(step_params.keys())
     
-    # Create format function for positions
-    def format_position(pos):
-        name, params = components[pos]
-        return format_step(name, params)
+    # Get suggested splits/compares
+    default_splits, default_compares = get_step_suggestions(step_params)
     
     # UI for selecting split/compare dimensions
     col1, col2 = st.columns(2)
@@ -180,18 +150,18 @@ def main():
         st.subheader("Split Dimensions")
         splits = st.multiselect(
             "Select split dimensions",
-            all_positions,
+            step_names,
             default=default_splits,
-            format_func=format_position
+            help="Steps with varying parameters to split on"
         )
         
     with col2:
         st.subheader("Compare Dimensions")
         compares = st.multiselect(
             "Select compare dimensions",
-            all_positions,
+            step_names,
             default=default_compares,
-            format_func=format_position
+            help="Steps with varying parameters to compare"
         )
     
     # Group messages
