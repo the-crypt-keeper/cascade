@@ -170,7 +170,7 @@ def main():
         split_display = []
         for name, param_str in split_key:
             split_display.append(f"{name} ({param_str})" if param_str else name)
-        st.header(f"Split: {' / '.join(split_display)}")
+        st.header(f"{' / '.join(split_display)}")
         
         # Organize by compare keys
         columns = defaultdict(dict)
@@ -190,7 +190,7 @@ def main():
                 compare_display = []
                 for name, param_str in compare_key:
                     compare_display.append(f"{name} ({param_str})" if param_str else name)
-                st.subheader(f"Compare: {' / '.join(compare_display)}")
+                st.subheader(f"{' / '.join(compare_display)}")
                 
                 # Get steps from compare dimensions
                 compare_steps = set(name for name, _ in compare_key)
