@@ -11,6 +11,18 @@ BASIC_WORDS = open('assets/basic.txt').read().splitlines()
 ADVANCED_WORDS = open('assets/advanced.txt').read().splitlines()
 TECHNIQUES = json.loads(open('assets/world_techniques.json').read())
 
+# Structured Types
+class WorldSchema(BaseModel):
+    world_name: str = Field(description="The World Name")
+    concept: str = Field(description="The way in which the concept was applied to create this world")
+    description: str = Field(description="Description of the world")
+    sensory: str = Field(description="Specific sensory information about the world")
+    challenges_opportunities: str = Field(description="Difficulties or opportunities faced by inhabitants of this world")
+    twist: str = Field(description="Unique Twist that makes this world interesting")
+    story_seeds: List[str] = Field(description="Story ideas or conflicts that could arise in this world")
+
+WORLD_SCHEMA_JSON = WorldSchema.model_json_schema()
+
 # Templates
 WORLD_TEMPLATE = """Let's engage in an innovative creative brainstorming session using the {{technique.title}} technique. {{technique.summary}}
 
@@ -50,18 +62,17 @@ We will create the world by exploring the following aspects in detail:
    - Suggest 2-3 potential story ideas or conflicts that could arise in this world.
    - These seeds should be unique to the world and stem from its particular characteristics.
 
-Create a distinct and richly detailed example world using this technique, showcasing the versatility of the {{title}} technique.""".strip()
+Create a distinct and richly detailed example world using this technique, showcasing the versatility of the {{title}} technique."""
+
+EXTRACT_TEMPLATE = """Given the following description of an imagined world:
+
+{{input}}
+
+Respond with all information from the description fully mapped into a JSON object that conforms to the following schema, where all fields are required:
+
+""" + json.dumps(WORLD_SCHEMA_JSON, indent=2)
 
 IMAGE_TEMPLATE = '''A movie poster with the text "{{world_name}}" at the bottom. {{description}} {{sensory}}'''
-
-class WorldSchema(BaseModel):
-    world_name: str = Field(description="The World Name")
-    concept: str = Field(description="The way in which the concept was applied to create this world")
-    description: str = Field(description="Description of the world")
-    sensory: str = Field(description="Specific sensory information about the world")
-    challenges_opportunities: str = Field(description="Difficulties or opportunities faced by inhabitants of this world")
-    twist: str = Field(description="Unique Twist that makes this world interesting")
-    story_seeds: List[str] = Field(description="Story ideas or conflicts that could arise in this world")
 
 async def main():
     # Create pipeline
@@ -106,8 +117,8 @@ async def main():
         },
         params={
             'model': 'gpt-4',
-            'schema_mode': 'openai-schema',
-            'schema_json': WorldSchema.model_json_schema(),
+            'schema_mode': 'openai-json',
+            'schema_json': WORLD_SCHEMA_JSON,
             'sampler': {
                 'temperature': 0.7,
                 'max_tokens': 2048
