@@ -127,6 +127,8 @@ class Stream:
 
     async def put(self, msg: Message, _no_store: bool = False):
         """Put a message into the stream"""
+        print("put()", msg.cascade_id)
+        
         # First persist to storage
         if not _no_store:
             await self.storage.store(self.name, msg)
@@ -146,8 +148,6 @@ class Stream:
             consumer_idx = hash(msg.cascade_id) % len(weighted_consumers)
             consumer_id = weighted_consumers[consumer_idx]
             await self.consumers[consumer_id][0].put(msg)
-            
-        print("put()", msg.cascade_id)
             
     async def get(self, consumer_id: str) -> Optional[Message]:
         """Get next message for this consumer"""
