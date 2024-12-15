@@ -35,21 +35,15 @@ Then, provide your final response in JSON format:
 
 ```json
 {
-    "challenge_0": {            
-            "title": "<first challenge title>",
-            "description": "<first challenge description>",
-            "concepts": "<concepts covered by the first challenge>",
-    },
-    "challenge_1": {
-            "title": "<second challenge title>",
-            "description": "<first challenge description>",
-            "concepts": "<concepts covered by the second challenge>",
-    },
-    "challenge_2": {
-            "title": "<third challenge title>",
-            "description": "<third challenge description>",
-            "concepts": "<concepts covered by the third challenge>",
-    }
+    "challenge_0_title": "<first challenge title>",
+    "challenge_0_description": "<first challenge description>",
+    "challenge_0_concepts": "<concepts covered by the first challenge>",
+    "challenge_1_title": "<second challenge title>",
+    "challenge_1_description": "<second challenge description>",
+    "challenge_1_concepts": "<concepts covered by the second challenge>",
+    "challenge_2_title": "<third challenge title>",
+    "challenge_2_description": "<third challenge description>",
+    "challenge_2_concepts": "<concepts covered by the third challenge>"
 }
 ```
 
@@ -63,11 +57,20 @@ Your task is to think step-by-step to analyze these challenges, select the most 
 
 1. Consider the following brainstorm ideas for programming challenges:
 
-{{challenge_0}}
+Challenge 0:
+Title: {{challenge_0_title}}
+Description: {{challenge_0_description}}
+Concepts: {{challenge_0_concepts}}
 
-{{challenge_1}}
+Challenge 1:
+Title: {{challenge_1_title}}
+Description: {{challenge_1_description}}
+Concepts: {{challenge_1_concepts}}
 
-{{challenge_2}}
+Challenge 2:
+Title: {{challenge_2_title}}
+Description: {{challenge_2_description}}
+Concepts: {{challenge_2_concepts}}
 
 2. Analyze the three challenges and select the one that is most appropriate to be represented as a single function that takes only simple data types (int, str, float, list, dict) as inputs and outputs. Consider the complexity of the challenge (prefer higher complexity) and how well it can be encapsulated in a single function.
 
