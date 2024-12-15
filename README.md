@@ -1,15 +1,15 @@
-
 # Cascade
 
-Cascade is a streaming pipeline system for complex content generation tasks. It enables the construction of idempotent, parallel processing pipelines through a simple YAML configuration format.
+Cascade is a Python asyncio-based streaming pipeline system for content generation tasks. It enables the construction of idempotent, parallel processing pipelines through a simple async python API.
 
 ## Key Features
 
+- **Simple API**: Pipelines are defined using Python.
 - **Streaming Architecture**: Steps process items asynchronously through named streams
-- **Idempotent Processing**: Work is tracked through cascade IDs, ensuring each item is processed exactly once
-- **Fair Load Balancing**: Multiple consumers can process items from a stream with configurable weights
-- **Simple Configuration**: Pipelines are defined in YAML with asset loading and parameter resolution
 - **Flexible Step Types**: Source, Transform, and Sink steps for different processing needs
+- **Idempotent Processing**: Work is tracked through cascade IDs, ensuring each item is processed exactly once
+- **Load Balancing**: Multiple consumers can process items from a stream with configurable weights
+- **Parallel Processing**: Multiple workers can process items from a stream in parallel.
 
 ## How It Works
 
@@ -37,7 +37,13 @@ source_step:count=0/transform_step      # After transformation
 
 This ID system ensures idempotency and enables tracing of data lineage.
 
-### Example Usage
+## Usage
+
+1. Create a Python script that defines your pipeline
+2. Run the pipeline:
+```bash
+uv run your_pipeline.py
+```
 
 See [example-simple.py](example-simple.py) and [code-challenge.py](code-challenge.py) for complete examples of building pipelines using the Python API.
 
@@ -276,22 +282,4 @@ await cascade.step(StepConsoleSink(
         'input': 'responses:1'
     }
 ))
-```
-
-## Installation
-
-Cascade uses `uv` for dependency management. To set up:
-
-```bash
-# Install dependencies from lock file
-uv sync
-```
-
-## Usage
-
-1. Create a Python script that defines your pipeline
-2. (optional) Implement any custom steps required
-3. Run the pipeline:
-```bash
-uv run your_pipeline.py
 ```
