@@ -10,9 +10,9 @@ class Cascade:
         self.manager = CascadeManager(self.storage, debug=debug)
         self.steps: List[cascade_steps.Step] = []
                 
-    def step(self, step: 'cascade_steps.Step'):
+    async def step(self, step: 'cascade_steps.Step'):
         """Register and setup a step"""
-        step.setup(self.manager)
+        await step.setup(self.manager)
         self.steps.append(step)
 
     def _import_step_class(self, class_name: str) -> Type[cascade_steps.Step]:
@@ -26,18 +26,7 @@ class Cascade:
         # Load and resolve configuration
         loader = CascadeLoader(self.config_path)
         config = loader.load()
-        
-        # Create all streams first
-        streams = set()
-        for step_config in config['steps'].values():
-            for stream_spec in step_config['streams'].values():
-                # Strip weight if present
-                stream_name = stream_spec.split(':')[0]
-                streams.add(stream_name)
-                
-        for stream in streams:
-            self.manager.get_stream(stream)
-            
+           
         # Create and setup all steps
         for step_name, step_config in config['steps'].items():
             # Import step class

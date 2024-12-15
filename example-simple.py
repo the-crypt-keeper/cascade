@@ -24,7 +24,7 @@ async def main():
     cascade = Cascade(config_path=Path('example-simple'))
     
     # Define steps
-    cascade.step(StepIdeaSource(
+    await cascade.step(StepIdeaSource(
         name='generate_scenario',
         streams={'output': 'vars'},
         params={
@@ -42,7 +42,7 @@ async def main():
         }
     ))
     
-    cascade.step(StepExpandTemplate(
+    await cascade.step(StepExpandTemplate(
         name='expand_template',
         streams={
             'input': 'vars:1',
@@ -53,7 +53,7 @@ async def main():
         }
     ))
     
-    cascade.step(StepLLMCompletion(
+    await cascade.step(StepLLMCompletion(
         name='generate_response',
         streams={
             'input': 'prompts:1',
@@ -69,7 +69,7 @@ async def main():
         }
     ))
     
-    cascade.step(StepConsoleSink(
+    await cascade.step(StepConsoleSink(
         name='console',
         streams={
             'input': 'responses:1'
