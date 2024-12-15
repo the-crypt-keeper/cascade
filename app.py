@@ -6,8 +6,16 @@ from collections import defaultdict
 from typing import Dict, List, Set, Tuple
 from cascade_base import Cascade, Message
 
-def parse_cascade_id(cascade_id: str) -> List[str]:
-    """Split cascade ID into components, handling merge nodes"""
+def parse_step_component(component: str) -> Tuple[str, Dict[str, str]]:
+    """Parse a step component into name and parameters"""
+    if ':' in component:
+        name, param_str = component.split(':', 1)
+        params = dict(p.split('=') for p in param_str.split(','))
+        return name, params
+    return component, {}
+
+def parse_cascade_id(cascade_id: str) -> List[Tuple[str, Dict[str, str]]]:
+    """Split cascade ID into components, handling merge nodes and parameters"""
     components = []
     current = ""
     
@@ -22,16 +30,23 @@ def parse_cascade_id(cascade_id: str) -> List[str]:
         else:
             if cascade_id[i] == '/':
                 if current:
-                    components.append(current)
+                    components.append(parse_step_component(current))
                     current = ""
             else:
                 current += cascade_id[i]
             i += 1
             
     if current:
-        components.append(current)
+        components.append(parse_step_component(current))
         
     return components
+
+def format_step(name: str, params: Dict[str, str]) -> str:
+    """Format step name and parameters for display"""
+    if params:
+        param_str = ", ".join(f"{k}={v}" for k, v in params.items())
+        return f"{name} ({param_str})"
+    return name
 
 def analyze_cascade_paths(messages: List[Message]) -> Tuple[List[str], List[str], List[str]]:
     """Analyze cascade paths to identify common and unique components"""
@@ -124,7 +139,13 @@ def main():
     common, default_splits, default_compares = analyze_cascade_paths(messages)
     
     # Get all possible split/compare positions
-    all_positions = list(range(len(parse_cascade_id(messages[0].cascade_id))))
+    components = parse_cascade_id(messages[0].cascade_id)
+    all_positions = list(range(len(components)))
+    
+    # Create format function for positions
+    def format_position(pos):
+        name, params = components[pos]
+        return format_step(name, params)
     
     # UI for selecting split/compare dimensions
     col1, col2 = st.columns(2)
@@ -135,7 +156,7 @@ def main():
             "Select split dimensions",
             all_positions,
             default=default_splits,
-            format_func=lambda x: f"Position {x}"
+            format_func=format_position
         )
         
     with col2:
@@ -144,7 +165,7 @@ def main():
             "Select compare dimensions",
             all_positions,
             default=default_compares,
-            format_func=lambda x: f"Position {x}"
+            format_func=format_position
         )
     
     # Group messages
@@ -152,7 +173,12 @@ def main():
     
     # Display groups
     for split_key, group in groups.items():
-        st.header(f"Split: {' / '.join(str(x) for x in split_key)}")
+        # Format split key for display
+        split_display = []
+        for pos in splits:
+            name, params = components[pos]
+            split_display.append(format_step(name, params))
+        st.header(f"Split: {' / '.join(split_display)}")
         
         # Organize by compare keys
         columns = defaultdict(dict)
@@ -162,13 +188,18 @@ def main():
             
             # Store in columns
             columns[compare_key] = history
-            
+        
         # Create columns for each compare key
         cols = st.columns(max(1, len(columns)))
         
         for i, (compare_key, history) in enumerate(columns.items()):
             with cols[i]:
-                st.subheader(f"Compare: {' / '.join(str(x) for x in compare_key)}")
+                # Format compare key for display
+                compare_display = []
+                for pos in compares:
+                    name, params = components[pos]
+                    compare_display.append(format_step(name, params))
+                st.subheader(f"Compare: {' / '.join(compare_display)}")
                 
                 # Display history
                 for step, data in history.items():
@@ -186,9 +217,12 @@ def main():
                         other_data = {k:v for k,v in data.items() if k != 'image'}
                         if other_data:
                             st.json(other_data)
-                    else:
-                        # Show regular data
+                    elif isinstance(data, (dict, list)):
+                        # Show JSON data
                         st.json(data)
+                    else:
+                        # Show string/primitive data
+                        st.write(data)
 
 if __name__ == "__main__":
     import asyncio
