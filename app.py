@@ -58,8 +58,11 @@ def analyze_cascade_paths(messages: List[Message]) -> Tuple[List[str], List[str]
     
     # Find unique values at each position
     for path in parsed_paths:
-        for i, component in enumerate(path):
-            position_values[i].add(component)
+        for i, (name, params) in enumerate(path):
+            # Convert to hashable format (name + sorted param string)
+            param_str = ",".join(f"{k}={v}" for k, v in sorted(params.items())) if params else ""
+            hashable = (name, param_str) if param_str else name
+            position_values[i].add(hashable)
             
     # Categorize positions
     common = []  # Same value in all paths
@@ -69,7 +72,14 @@ def analyze_cascade_paths(messages: List[Message]) -> Tuple[List[str], List[str]
     
     for i in range(max_len):
         if len(position_values[i]) == 1:
-            common.append(list(position_values[i])[0])
+            # Convert back to name, params format
+            value = list(position_values[i])[0]
+            if isinstance(value, tuple):
+                name, param_str = value
+                params = dict(p.split('=') for p in param_str.split(',')) if param_str else {}
+                common.append((name, params))
+            else:
+                common.append((value, {}))
         else:
             unique.append(i)
             
