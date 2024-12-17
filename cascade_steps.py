@@ -378,7 +378,7 @@ class StepText2Image(TransformStep):
 
         out_msg = Message(
             cascade_id=out_cascade_id,
-            payload=result['images'][0],
+            payload={ 'image': result['images'][0] },
             metadata={
                 'source_step': self.name,
                 'model': self.model,
