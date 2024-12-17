@@ -11,6 +11,25 @@ Cascade is a Python asyncio-based streaming pipeline system for content generati
 - **Load Balancing**: Multiple consumers can process items from a stream with configurable weights
 - **Parallel Processing**: Multiple workers can process items from a stream in parallel.
 
+## Usage
+
+First, set OPENAI_BASE_URL, OPENAI_API_KEY enviroment variables.
+
+Next run the pipeline with uv (which will handle creating the venv for you):
+```bash
+uv run your_pipeline.py
+```
+
+## Example Pipelines
+
+TODO: document code-challenege, logo-gen, example-simple-image, world-builder
+
+## Roadmap (TODOs)
+
+[ ] Pipeline multiple-input flows (theoretically supported but likely doesnt work right)
+[ ] More Source Steps
+[ ] VLM Inference Step (Image+Text to Text) maybe with ollama API
+
 ## How It Works
 
 ### Streams and Steps
@@ -36,16 +55,6 @@ source_step:count=0/transform_step      # After transformation
 ```
 
 This ID system ensures idempotency and enables tracing of data lineage.
-
-## Usage
-
-1. Create a Python script that defines your pipeline
-2. Run the pipeline:
-```bash
-uv run your_pipeline.py
-```
-
-See [example-simple.py](example-simple.py) and [code-challenge.py](code-challenge.py) for complete examples of building pipelines using the Python API.
 
 ## Architecture
 
