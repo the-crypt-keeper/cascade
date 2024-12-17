@@ -95,7 +95,7 @@ async def main():
             'output': 'raw_concepts'
         },
         params={
-            'model': 'gemma-2-9b-it-exl2-6.0bpw',
+            'model': 'Meta-Llama-3.1-405B-Instruct',
             'sampler': {
                 'temperature': 0.7,
                 'max_tokens': 1024
