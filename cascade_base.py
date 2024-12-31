@@ -124,14 +124,14 @@ class Stream:
     def __init__(self, name: str, storage: SQLiteStorage):
         self.name = name
         self.storage = storage
-        self.consumers: Dict[str, tuple[asyncio.Queue, int]] = {}  # (queue, weight)
+        self.subs: Dict[str, tuple[asyncio.Queue, int]] = {}  # (queue, weight)
         
-    def register_consumer(self, weight: int = 1) -> Tuple[str, Subscription]:
-        """Register a consumer with optional weight for load balancing. Returns (consumer_id, subscription)"""
-        consumer_id = f"{self.name}:consumer{len(self.consumers)}"
+    def register_sub(self, weight: int = 1) -> Tuple[str, Subscription]:
+        """Register a subscription with optional weight for load balancing. Returns (sub_id, subscription)"""
+        sub_id = f"{self.name}:sub{len(self.subs)}"
         queue = asyncio.Queue()
-        self.consumers[consumer_id] = (queue, weight)
-        return consumer_id, Subscription(queue)
+        self.subs[sub_id] = (queue, weight)
+        return sub_id, Subscription(queue)
         
     async def check_exists(self, cascade_id: str) -> bool:
         """Check if a message already exists in this stream"""
@@ -145,33 +145,33 @@ class Stream:
         if not _no_store:
             await self.storage.store(self.name, msg)
         
-        if not self.consumers:
+        if not self.subs:
             return
 
-        # Build weighted consumer list
-        weighted_consumers = []
-        for consumer_id, (_, weight) in self.consumers.items():
+        # Build weighted subscriber list
+        weighted_subs = []
+        for sub_id, (_, weight) in self.subs.items():
             if weight == 0:  # Special case: gets all messages
-                await self.consumers[consumer_id][0].put(msg)
-            weighted_consumers.extend([consumer_id] * weight)
+                await self.subs[sub_id][0].put(msg)
+            weighted_subs.extend([sub_id] * weight)
 
-        if weighted_consumers:
-            # Use consistent hashing to pick consumer
-            consumer_idx = hash(msg.cascade_id) % len(weighted_consumers)
-            consumer_id = weighted_consumers[consumer_idx]
-            await self.consumers[consumer_id][0].put(msg)
+        if weighted_subs:
+            # Use consistent hashing to pick subscriber
+            sub_idx = hash(msg.cascade_id) % len(weighted_subs)
+            sub_id = weighted_subs[sub_idx]
+            await self.subs[sub_id][0].put(msg)
             
-    async def get(self, consumer_id: str) -> Optional[Message]:
-        """Get next message for this consumer"""
-        if consumer_id not in self.consumers:
-            raise ValueError(f"Consumer {consumer_id} not registered")
-        next_msg = await self.consumers[consumer_id][0].get()
-        print("get()", consumer_id, next_msg.cascade_id)
+    async def get(self, sub_id: str) -> Optional[Message]:
+        """Get next message for this subscription"""
+        if sub_id not in self.subs:
+            raise ValueError(f"Subscription {sub_id} not registered")
+        next_msg = await self.subs[sub_id][0].get()
+        print("get()", sub_id, next_msg.cascade_id)
         return next_msg
 
     def is_empty(self) -> bool:
-        """Check if all consumer queues are empty"""
-        return all(queue.empty() for queue, _ in self.consumers.values())
+        """Check if all subscription queues are empty"""
+        return all(queue.empty() for queue, _ in self.subs.values())
 
 class CascadeManager:
     def __init__(self, storage: SQLiteStorage, debug: bool = False):
@@ -227,8 +227,8 @@ class CascadeManager:
             for stream_name, stream in self.streams.items():
                 empty = stream.is_empty()
                 print(f"Stream '{stream_name}' empty: {empty}")
-                print(f"-- Consumers: {list(stream.consumers.keys())}")
-                print(f"-- Queue sizes: {[queue.qsize() for queue, _ in stream.consumers.values()]}")
+                print(f"-- Subscribers: {list(stream.subs.keys())}")
+                print(f"-- Queue sizes: {[queue.qsize() for queue, _ in stream.subs.values()]}")
             
             print(f"All steps idle: {all_idle} ({len(self.idle_steps)} == {len(self.steps)})")
             print(f"All queues empty: {all_empty}")
