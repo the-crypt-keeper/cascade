@@ -187,13 +187,15 @@ class StepIdeaSource(SourceStep):
     
 class StepExpandTemplate(TransformStep):
     async def _setup(self):
-        # Create template once during setup
         self.template = Template(self.params['template'])
+        self.json = self.params.get('json', False)
 
     async def process(self, msg: Message) -> dict:
         """Expand template using input data as context"""
         payload = msg.payload if isinstance(msg.payload, dict) else { "input": msg.payload }
-        return self.template.render(**payload)
+        output = self.template.render(**payload)
+        if self.json: output = json.loads(output)
+        return output
 
 class StepLLMCompletion(TransformStep):
     async def _setup(self):
@@ -336,32 +338,25 @@ class StepJSONParser(TransformStep):
 class StepText2Image(TransformStep):
     async def _setup(self):
         """Initialize image generation parameters"""
-        # Get API URL from environment or params
-        self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:5001'))
+        self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:3333'))
         self.width = int(self.params.get('width', 512))
         self.height = int(self.params.get('height', 512))
-        self.steps = int(self.params.get('steps', 20))
+        self.model = self.params.get('model')
         
-        # Fetch current model info
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.api_url}/sdapi/v1/sd-models") as response:
-                if response.status != 200:
-                    raise Exception(f"Failed to fetch SD models: {response.status}")
-                models = await response.json()
-                if not models:
-                    raise Exception("No SD models found")
-                self.model = models[0]['model_name']
+        if not self.model:
+            raise Exception(f"LLMCompletion {self.name} requires model parameter.")
 
     async def process(self, msg: Message) -> None:
         """Generate image from text prompt"""
-        # Check if output for this model already exists
+        # TODO: support `batch_count` for multiple outputs
+        
         out_cascade_id = msg.derive_cascade_id(self.name, model=self.model)
         if await self.streams['output'].check_exists(out_cascade_id):
             return
 
         payload = {
             "prompt": msg.payload,
-            "steps": self.steps,
+            "model": self.model,
             "width": self.width,
             "height": self.height
         }
@@ -384,8 +379,7 @@ class StepText2Image(TransformStep):
                 'model': self.model,
                 'timestamp': time.time(),
                 'width': self.width,
-                'height': self.height,
-                'steps': self.steps
+                'height': self.height
             }
         )
         await self.streams['output'].put(out_msg)

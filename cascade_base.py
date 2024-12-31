@@ -24,8 +24,8 @@ class Message:
 
     @staticmethod
     def merge_cascade_ids(cascade_ids: list[str], step_name: str) -> str:
-        merged = "[" + "|".join(sorted(cascade_ids)) + "]"
-        return f"{merged}/{step_name}"
+        merged = ";".join(sorted(cascade_ids))
+        return f"{merged}@{step_name}"
 
 class SQLiteStorage:
     def __init__(self, db_path: str):
@@ -238,42 +238,57 @@ class CascadeManager:
 
     async def unroll(self, msg: Message) -> Dict[str, Any]:
         """Unroll a cascade ID to get all upstream outputs"""
-        result = {}
         
         def parse_step_name(step_spec: str) -> str:
             """Extract step name from step specification"""
             return step_spec.split(':', 1)[0]
         
-        # Handle merge nodes first
-        current_id = msg.cascade_id
-        cascade_paths = []
-        
-        while '[' in current_id:
-            merge_start = current_id.rindex('[')
-            merge_end = current_id.index(']', merge_start)
-            # Get merged paths
-            merged = current_id[merge_start+1:merge_end].split('|')
-            cascade_paths.extend(merged)
-            # Continue with prefix
-            current_id = current_id[:merge_start]
-            
-        # Add the main path if there is one
-        if current_id:
-            cascade_paths.append(current_id)
-            
-        # For each path, get all intermediate results
-        for path in cascade_paths:
+        async def unroll_single_path(path: str) -> Dict[str, Any]:
+            """Unroll a single path, handling duplicate step names"""
+            result = {}
             current_path = []
+            seen_steps = {}  # track count of each step name
+            
             for step in path.split('/'):
+                if not step:
+                    continue
+                    
                 current_path.append(step)
                 full_id = '/'.join(current_path)
                 
-                # Get message for this cascade ID
                 msg = await self.storage.get_message(full_id)
                 if msg:
                     step_name = parse_step_name(step)
+                    if step_name in result:
+                        # Add suffix for duplicate step names
+                        count = seen_steps.get(step_name, 0)
+                        seen_steps[step_name] = count + 1
+                        step_name = f"{step_name}_{count}"
                     result[step_name] = msg.payload
-                    
+            
+            return result
+
+        # Split into roots and path if @ present
+        parts = msg.cascade_id.split('@', 1)
+        if len(parts) == 2:
+            roots_part, path = parts
+            roots = roots_part.split(';')
+        else:
+            roots = []
+            path = parts[0]
+        
+        # Build final result
+        result = {}
+        
+        # Process roots
+        for i, root in enumerate(roots):
+            root_result = await unroll_single_path(root)
+            result[f"root{i}"] = root_result
+        
+        # Process main path
+        path_result = await unroll_single_path(path)
+        result.update(path_result)
+        
         return result
 
 class Cascade:
