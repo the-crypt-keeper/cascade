@@ -53,13 +53,12 @@ Format your response as a list of JSON objects with these fields:
 
 Reply with only the JSON object.'''
 
-IMAGE_TEMPLATE = '''{% set design = input|random %}
-A minimalist, professional logo design with the text "CASCADE" prominently featured.
+IMAGE_TEMPLATE = '''A minimalist, professional logo design with the text "CASCADE" prominently featured.
 
-Core Concept: {{design.concept}}
+Core Concept: {{concept}}
 Style: Clean, modern, technical
-Colors: {{design.colors}}
-Composition: {{design.composition}}'''
+Colors: {{colors}}
+Composition: {{composition}}'''
 
 async def main():
     # Create pipeline
@@ -152,7 +151,8 @@ async def main():
             'output': 'image_prompts'
         },
         params={
-            'template': IMAGE_TEMPLATE
+            'template': IMAGE_TEMPLATE,
+            'list_explode': True
         }
     ))
 
