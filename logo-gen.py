@@ -32,18 +32,24 @@ Please brainstorm creative visual concepts that could work as a logo, considerin
 
 Be specific and detailed in describing potential visual approaches.'''
 
-EXTRACT_TEMPLATE = '''Given the brainstorming output below, extract specific visual design elements for a logo:
+EXTRACT_TEMPLATE = '''Given the brainstorming output below, extract the list of specific visual design elements for a logo:
 
 <input>
 {{input}}
 </input>
 
-Format your response as a JSON object with these fields:
+Format your response as a list of JSON objects with these fields:
+
+[
 {
   "concept": "Brief description of the core visual concept",
   "colors": "Specific color palette description",
   "composition": "Description of layout and arrangement"
+},
+{
+  .. same as above ..   
 }
+]
 
 Reply with only the JSON object.'''
 
@@ -63,7 +69,7 @@ async def main():
         name='generate_scenario',
         streams={'output': 'vars'},
         params={
-            'count': 5,
+            'count': 1,
             'schema': {
                 'random_basic_words': {
                     'sample': BASIC_WORDS,
