@@ -126,13 +126,12 @@ class Stream:
         self.storage = storage
         self.consumers: Dict[str, tuple[asyncio.Queue, int]] = {}  # (queue, weight)
         
-    def register_consumer(self, consumer_id: str, weight: int = 1) -> Subscription:
-        """Register a consumer with optional weight for load balancing"""
-        if consumer_id in self.consumers:
-            raise ValueError(f"Consumer '{consumer_id}' already registered for stream '{self.name}'")
+    def register_consumer(self, weight: int = 1) -> Tuple[str, Subscription]:
+        """Register a consumer with optional weight for load balancing. Returns (consumer_id, subscription)"""
+        consumer_id = f"{self.name}:consumer{len(self.consumers)}"
         queue = asyncio.Queue()
         self.consumers[consumer_id] = (queue, weight)
-        return Subscription(queue)
+        return consumer_id, Subscription(queue)
         
     async def check_exists(self, cascade_id: str) -> bool:
         """Check if a message already exists in this stream"""

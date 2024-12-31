@@ -50,7 +50,8 @@ class Step(ABC):
             if ':' in stream_spec:
                 stream_name, weight = stream_spec.rsplit(':', 1)
                 stream = self.manager.get_stream(stream_name)
-                self.subs[port_name] = stream.register_consumer(self.name, int(weight))
+                consumer_id, sub = stream.register_consumer(int(weight))
+                self.subs[port_name] = sub
             else:
                 stream = self.manager.get_stream(stream_spec)
             self.streams[port_name] = stream
