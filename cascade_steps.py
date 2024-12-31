@@ -22,6 +22,24 @@ class Step(ABC):
         self.streams: Dict[str, Stream] = {}
         self.subs: Dict[str, Subscription] = {}
         
+    def _make_step_id(self, worker_id: Optional[str] = None) -> str:
+        """Generate unique step ID including parameters"""
+        step_id = self.name
+        if worker_id is not None:
+            step_id = f"{worker_id}@{step_id}"
+        if self.params:
+            param_str = ",".join(f"{k}={v}" for k, v in sorted(self.params.items()))
+            step_id = f"{step_id}[{param_str}]"
+        return step_id
+
+    def mark_idle(self, worker_id: Optional[str] = None):
+        """Mark this step (or worker) as idle"""
+        self.manager.mark_step_idle(self._make_step_id(worker_id))
+
+    def mark_active(self, worker_id: Optional[str] = None):
+        """Mark this step (or worker) as active"""
+        self.manager.mark_step_active(self._make_step_id(worker_id))
+
     async def setup(self, manager: 'CascadeManager'):
         """Initialize step with cascade manager"""
         self.manager = manager
@@ -63,10 +81,10 @@ class TransformStep(Step):
         while True:
             try:
                 # Mark as idle before waiting
-                self.manager.mark_step_idle(step_id)
+                self.mark_idle(f"worker{worker_id}")
                 msg = await self.subs['input'].get()
                 # Mark as active while processing
-                self.manager.mark_step_active(step_id)
+                self.mark_active(f"worker{worker_id}")
                 
                 # Process the message
                 result = await self.process(msg)
@@ -106,7 +124,7 @@ class SourceStep(Step):
     async def run(self):
         """Generate initial items"""
         try:
-            self.manager.mark_step_active(self.name)
+            self.mark_active()
             
             count = int(self.params.get('count', 1))
             # Generate deterministic IDs
@@ -126,7 +144,7 @@ class SourceStep(Step):
                         await self.streams['output'].put(msg)
             
             # Mark as idle once we've generated everything
-            self.manager.mark_step_idle(self.name)
+            self.mark_idle()
             
         except Exception as e:
             print(f"Error in {self.name}: {e}")
@@ -143,10 +161,10 @@ class SinkStep(Step):
         while True:
             try:
                 # Mark as idle before waiting
-                self.manager.mark_step_idle(self.name)
+                self.mark_idle()
                 msg = await self.subs['input'].get()
                 # Mark as active while processing
-                self.manager.mark_step_active(self.name)
+                self.mark_active()
                 
                 # Process the message
                 await self.sink(msg)
