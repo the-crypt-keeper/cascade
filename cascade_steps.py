@@ -20,6 +20,7 @@ class Step(ABC):
         self.params = params
         self.manager: Optional['CascadeManager'] = None
         self.streams: Dict[str, Stream] = {}
+        self.subs: Dict[str, Subscription] = {}
         
     async def setup(self, manager: 'CascadeManager'):
         """Initialize step with cascade manager"""
@@ -31,7 +32,7 @@ class Step(ABC):
             if ':' in stream_spec:
                 stream_name, weight = stream_spec.rsplit(':', 1)
                 stream = self.manager.get_stream(stream_name)
-                stream.register_consumer(self.name, int(weight))
+                self.subs[port_name] = stream.register_consumer(self.name, int(weight))
             else:
                 stream = self.manager.get_stream(stream_spec)
             self.streams[port_name] = stream
@@ -63,7 +64,7 @@ class TransformStep(Step):
             try:
                 # Mark as idle before waiting
                 self.manager.mark_step_idle(step_id)
-                msg = await self.streams['input'].get(self.name)
+                msg = await self.subs['input'].get()
                 # Mark as active while processing
                 self.manager.mark_step_active(step_id)
                 
@@ -143,7 +144,7 @@ class SinkStep(Step):
             try:
                 # Mark as idle before waiting
                 self.manager.mark_step_idle(self.name)
-                msg = await self.streams['input'].get(self.name)
+                msg = await self.subs['input'].get()
                 # Mark as active while processing
                 self.manager.mark_step_active(self.name)
                 

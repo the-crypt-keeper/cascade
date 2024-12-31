@@ -111,15 +111,26 @@ class SQLiteStorage:
                 )
             return None
         
+class Subscription:
+    """Wraps a queue for a specific consumer"""
+    def __init__(self, queue: asyncio.Queue):
+        self.queue = queue
+        
+    async def get(self) -> Message:
+        """Get next message from this subscription"""
+        return await self.queue.get()
+
 class Stream:
     def __init__(self, name: str, storage: SQLiteStorage):
         self.name = name
         self.storage = storage
         self.consumers: Dict[str, tuple[asyncio.Queue, int]] = {}  # (queue, weight)
         
-    def register_consumer(self, consumer_id: str, weight: int = 1):
+    def register_consumer(self, consumer_id: str, weight: int = 1) -> Subscription:
         """Register a consumer with optional weight for load balancing"""
-        self.consumers[consumer_id] = (asyncio.Queue(), weight)
+        queue = asyncio.Queue()
+        self.consumers[consumer_id] = (queue, weight)
+        return Subscription(queue)
         
     async def check_exists(self, cascade_id: str) -> bool:
         """Check if a message already exists in this stream"""
