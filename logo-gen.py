@@ -148,18 +148,28 @@ async def main():
         name='expand_image',
         streams={
             'input': 'designs:1',
+            'output': 'raw_image_prompts'
+        },
+        params={
+            'template': IMAGE_TEMPLATE
+        }
+    ))
+
+    await cascade.step(StepJSONParser(
+        name='explode_prompts',
+        streams={
+            'input': 'raw_image_prompts:1',
             'output': 'image_prompts'
         },
         params={
-            'template': IMAGE_TEMPLATE,
-            'list_explode': True
+            'explode_list': True
         }
     ))
 
     await cascade.step(StepText2Image(
         name='generate_image',
         streams={
-            'input': 'image_prompts:0',
+            'input': 'image_prompts:1',
             'output': 'images'
         },
         params={

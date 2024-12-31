@@ -209,36 +209,14 @@ class StepExpandTemplate(TransformStep):
     async def _setup(self):
         self.template = Template(self.params['template'])
         self.json = self.params.get('json', False)
-        self.list_explode = self.params.get('list_explode', False)
 
-    async def process(self, msg: Message) -> None:
+    async def process(self, msg: Message) -> Any:
         """Expand template using input data as context"""
-        if self.list_explode and isinstance(msg.payload, list):
-            # Process each item in the list separately
-            for i, item in enumerate(msg.payload):
-                payload = item if isinstance(item, dict) else {"input": item}
-                output = self.template.render(**payload)
-                if self.json:
-                    output = json.loads(output)
-                
-                # Generate unique cascade ID for each output
-                out_cascade_id = msg.derive_cascade_id(self.name, index=i)
-                
-                # Check if we've already processed this
-                if not await self.streams['output'].check_exists(out_cascade_id):
-                    out_msg = Message(
-                        cascade_id=out_cascade_id,
-                        payload=output,
-                        metadata={'source_step': self.name}
-                    )
-                    await self.streams['output'].put(out_msg)
-        else:
-            # Process single input
-            payload = msg.payload if isinstance(msg.payload, dict) else {"input": msg.payload}
-            output = self.template.render(**payload)
-            if self.json:
-                output = json.loads(output)
-            return output
+        payload = msg.payload if isinstance(msg.payload, dict) else {"input": msg.payload}
+        output = self.template.render(**payload)
+        if self.json:
+            output = json.loads(output)
+        return output
 
 class StepLLMCompletion(TransformStep):
     async def _setup(self):
