@@ -305,8 +305,12 @@ class StepJSONParser(TransformStep):
             return None
         
         # Find JSON boundaries
-        sidx = data.find('{')
-        eidx = data.rfind('}')
+        if data[0] == '[':
+            sidx = data.find('[')
+            eidx = data.rfind(']')
+        else:
+            sidx = data.find('{')
+            eidx = data.rfind('}')
         
         if sidx == -1 or eidx == -1:
             print(f"JSON parse failed in {self.name}: {data}")
