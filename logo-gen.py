@@ -95,7 +95,7 @@ async def main():
             'output': 'raw_concepts'
         },
         params={
-            'model': 'Meta-Llama-3.1-405B-Instruct',
+            'model': 'Mistral-large-2407',
             'sampler': {
                 'temperature': 0.7,
                 'max_tokens': 1024
@@ -152,16 +152,30 @@ async def main():
     await cascade.step(StepText2Image(
         name='generate_image',
         streams={
-            'input': 'image_prompts:1',
+            'input': 'image_prompts:0',
             'output': 'images'
         },
         params={
             'width': 512,
             'height': 512,
-            'steps': 20
+            'n': 2,
+            'model': 'flux1-schnell-q4_k'
         }
     ))
-    
+    await cascade.step(StepText2Image(
+        name='generate_image',
+        streams={
+            'input': 'image_prompts:0',
+            'output': 'images'
+        },
+        params={
+            'width': 512,
+            'height': 512,
+            'n': 2,
+            'model': 'flux-hyp8-Q8_0'
+        }
+    ))
+        
     await cascade.step(StepJSONSink(
         name='export_json',
         streams={
