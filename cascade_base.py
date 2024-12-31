@@ -128,6 +128,8 @@ class Stream:
         
     def register_consumer(self, consumer_id: str, weight: int = 1) -> Subscription:
         """Register a consumer with optional weight for load balancing"""
+        if consumer_id in self.consumers:
+            raise ValueError(f"Consumer '{consumer_id}' already registered for stream '{self.name}'")
         queue = asyncio.Queue()
         self.consumers[consumer_id] = (queue, weight)
         return Subscription(queue)
