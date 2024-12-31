@@ -210,8 +210,7 @@ class CascadeManager:
         if step_id not in self.steps:
             self.steps.add(step_id)
         if step_id in self.idle_steps:
-            if self.debug:
-                print(f"Step {step_id} marked active")
+            print(f"Step {step_id} marked active")
             self.idle_steps.discard(step_id)
 
     def _check_completion(self):
@@ -234,10 +233,8 @@ class CascadeManager:
             print(f"All queues empty: {all_empty}")
         else:
             # List active steps and count non-empty streams
-            active_steps = self.steps - self.idle_steps
             active_streams = sum(1 for stream in self.streams.values() if not stream.is_empty())
-            active_steps_str = ', '.join(sorted(active_steps)) if active_steps else 'none'
-            print(f"Progress: {len(self.idle_steps)}/{len(self.steps)} steps idle, {active_streams} streams with pending messages. Active steps: {active_steps_str}")
+            print(f"Progress: {len(self.idle_steps)}/{len(self.steps)} steps idle, {active_streams} streams with pending messages.")
 
         if all_idle and all_empty:
             if self.debug:
