@@ -28,7 +28,7 @@ class Step(ABC):
         if worker_id is not None:
             step_id = f"{worker_id}@{step_id}"
         if self.params:
-            param_str = ",".join(f"{k}={v}" for k, v in sorted(self.params.items()))
+            param_str = ",".join(f"{k}={str(v)[:40]}" for k, v in sorted(self.params.items()))
             step_id = f"{step_id}[{param_str}]"
         return step_id
 
