@@ -342,6 +342,7 @@ class StepText2Image(TransformStep):
         self.api_url = self.params.get('api_url', os.getenv('SD_API_URL', 'http://127.0.0.1:3333'))
         self.width = int(self.params.get('width', 512))
         self.height = int(self.params.get('height', 512))
+        self.n = self.params.get('n',1)
         self.model = self.params.get('model')
         
         if not self.model:
@@ -351,7 +352,7 @@ class StepText2Image(TransformStep):
         """Generate image from text prompt"""
         # TODO: support `batch_count` for multiple outputs
         
-        out_cascade_id = msg.derive_cascade_id(self.name, model=self.model)
+        out_cascade_id = msg.derive_cascade_id(self.name, index=0, model=self.model)
         if await self.streams['output'].check_exists(out_cascade_id):
             return
 
@@ -359,7 +360,8 @@ class StepText2Image(TransformStep):
             "prompt": msg.payload,
             "model": self.model,
             "width": self.width,
-            "height": self.height
+            "height": self.height,
+            "batch_count": self.n,
         }
         
         async with aiohttp.ClientSession() as session:
@@ -372,18 +374,22 @@ class StepText2Image(TransformStep):
                     
                 result = await response.json()
 
-        out_msg = Message(
-            cascade_id=out_cascade_id,
-            payload={ 'image': result['images'][0] },
-            metadata={
-                'source_step': self.name,
-                'model': self.model,
-                'timestamp': time.time(),
-                'width': self.width,
-                'height': self.height
-            }
-        )
-        await self.streams['output'].put(out_msg)
+        for idx, b64_data in enumerate(result['images']):
+            payload = { 'image': b64_data }
+            out_cascade_id = msg.derive_cascade_id(self.name, index=idx, model=self.model)
+            if not await self.streams['output'].check_exists(out_cascade_id):
+                out_msg = Message(
+                    cascade_id=out_cascade_id,
+                    payload=payload,
+                    metadata={
+                        'source_step': self.name,
+                        'model': self.model,
+                        'timestamp': time.time(),
+                        'width': self.width,
+                        'height': self.height
+                    }
+                )
+                await self.streams['output'].put(out_msg)
 
 class StepJSONSink(SinkStep):
     async def _setup(self):
