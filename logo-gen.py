@@ -53,12 +53,13 @@ Format your response as a list of JSON objects with these fields:
 
 Reply with only the JSON object.'''
 
-IMAGE_TEMPLATE = '''A minimalist, professional logo design with the text "CASCADE" prominently featured.
+IMAGE_TEMPLATE = '''{% set design = input|random %}
+A minimalist, professional logo design with the text "CASCADE" prominently featured.
 
-Core Concept: {{concept}}
+Core Concept: {{design.concept}}
 Style: Clean, modern, technical
-Colors: {{colors}}
-Composition: {{composition}}'''
+Colors: {{design.colors}}
+Composition: {{design.composition}}'''
 
 async def main():
     # Create pipeline
