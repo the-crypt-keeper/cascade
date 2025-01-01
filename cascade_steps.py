@@ -78,7 +78,6 @@ class TransformStep(Step):
         
     async def worker(self, worker_id: int):
         """Individual worker process"""
-        step_id = f"{self.name}:worker{worker_id}"
         while True:
             try:
                 # Mark as idle before waiting
