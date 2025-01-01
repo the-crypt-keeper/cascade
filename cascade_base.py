@@ -161,14 +161,6 @@ class Stream:
             sub_id = weighted_subs[sub_idx]
             await self.subs[sub_id][0].put(msg)
             
-    async def get(self, sub_id: str) -> Optional[Message]:
-        """Get next message for this subscription"""
-        if sub_id not in self.subs:
-            raise ValueError(f"Subscription {sub_id} not registered")
-        next_msg = await self.subs[sub_id][0].get()
-        print("get()", sub_id, next_msg.cascade_id)
-        return next_msg
-
     def is_empty(self) -> bool:
         """Check if all subscription queues are empty"""
         return all(queue.empty() for queue, _ in self.subs.values())
