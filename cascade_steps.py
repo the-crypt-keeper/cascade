@@ -130,7 +130,7 @@ class SourceStep(Step):
             count = int(self.params.get('count', 1))
             # Generate deterministic IDs
             for i in range(count):
-                cascade_id = f"{self.name}:count={i}"
+                cascade_id = f"{self.name}:index={i}"
                 
                 # Check if we've already generated this
                 if not await self.streams['output'].check_exists(cascade_id):
