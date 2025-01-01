@@ -331,11 +331,12 @@ class StepJSONParser(TransformStep):
             outputs.append(result[first_key])
         
         # Handle explode_list option
+        elif self.explode_list and isinstance(result, list):
+            outputs.extend(result)
         elif self.explode_list and isinstance(result, dict):
             target_list = result.get(self.explode_list)
             if isinstance(target_list, list):
-                outputs.extend(target_list)
-        
+                outputs.extend(target_list)        
         # Handle explode_keys option
         elif self.explode_keys and isinstance(result, dict):
             for key in self.explode_keys:

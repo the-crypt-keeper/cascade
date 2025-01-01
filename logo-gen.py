@@ -30,7 +30,7 @@ Please brainstorm creative visual concepts that could work as a logo, considerin
 4. Overall composition
 5. How to incorporate the text "CASCADE"
 
-Be specific and detailed in describing potential visual approaches.'''
+Be specific and detailed in describing 3 potential visual approaches.'''
 
 EXTRACT_TEMPLATE = '''Given the brainstorming output below, extract the list of specific visual design elements for a logo:
 
@@ -64,12 +64,12 @@ async def main():
     # Create pipeline
     cascade = Cascade(project_name='logo-gen')
     
-    # Define steps
+    # Generate some random words
     await cascade.step(StepIdeaSource(
         name='generate_scenario',
         streams={'output': 'vars'},
         params={
-            'count': 1,
+            'count': 2,
             'schema': {
                 'random_basic_words': {
                     'sample': BASIC_WORDS,
@@ -83,124 +83,88 @@ async def main():
         }
     ))
     
+    # Brainstorm Prompt, Completion
     await cascade.step(StepExpandTemplate(
         name='expand_brainstorm',
         streams={
-            'input': 'vars:1',
+            'input': 'vars:0',
             'output': 'brainstorm_prompts'
         },
         params={
             'template': BRAINSTORM_TEMPLATE
         }
-    ))
-    
-    await cascade.step(StepLLMCompletion(
-        name='generate_concepts',
-        streams={
-            'input': 'brainstorm_prompts:1',
-            'output': 'raw_concepts'
-        },
-        params={
-            'model': 'Mistral-large-2407',
-            'sampler': {
-                'temperature': 0.7,
-                'max_tokens': 1024
+    ))    
+    for brainstorm_model in ['Mistral-large-2407','Meta-Llama-3.1-405B-Instruct']:
+        await cascade.step(StepLLMCompletion(
+            name='generate_concepts',
+            streams={
+                'input': 'brainstorm_prompts:0',
+                'output': 'raw_concepts'
+            },
+            params={
+                'model': brainstorm_model,
+                'sampler': { 'temperature': 1.0, 'max_tokens': 2048 }
             }
-        }
-    ))
-
+        ))
+        
+    # Extract brainstorm into a JSON list, explode it into designs
     await cascade.step(StepExpandTemplate(
         name='expand_extract',
         streams={
-            'input': 'raw_concepts:1',
+            'input': 'raw_concepts:0',
             'output': 'extract_prompts'
         },
-        params={
-            'template': EXTRACT_TEMPLATE
-        }
+        params={ 'template': EXTRACT_TEMPLATE }
     ))
-
     await cascade.step(StepLLMCompletion(
         name='extract_design',
         streams={
-            'input': 'extract_prompts:1',
+            'input': 'extract_prompts:0',
             'output': 'raw_design'
         },
         params={
             'model': 'gemma-2-9b-it-exl2-6.0bpw',
             'schema_mode': 'openai-json',
-            'sampler': {
-                'temperature': 0.3,
-                'max_tokens': 512
-            }
+            'parallel': 2,
+            'sampler': { 'temperature': 0.3, 'max_tokens': 512 }
         }
     ))
-
     await cascade.step(StepJSONParser(
         name='parse_design',
         streams={
-            'input': 'raw_design:1',
+            'input': 'raw_design:0',
             'output': 'designs'
-        }
+        },
+        params={ 'explode_list': True }
     ))
 
+    # Image prompt and Image completion for each design
     await cascade.step(StepExpandTemplate(
         name='expand_image',
         streams={
-            'input': 'designs:1',
-            'output': 'raw_image_prompts'
-        },
-        params={
-            'template': IMAGE_TEMPLATE
-        }
-    ))
-
-    await cascade.step(StepJSONParser(
-        name='explode_prompts',
-        streams={
-            'input': 'raw_image_prompts:1',
+            'input': 'designs:0',
             'output': 'image_prompts'
         },
-        params={
-            'explode_list': True
-        }
-    ))
-
-    await cascade.step(StepText2Image(
-        name='generate_image',
-        streams={
-            'input': 'image_prompts:1',
-            'output': 'images'
-        },
-        params={
-            'width': 512,
-            'height': 512,
-            'n': 2,
-            'model': 'flux1-schnell-q4_k'
-        }
-    ))
-    await cascade.step(StepText2Image(
-        name='generate_image',
-        streams={
-            'input': 'image_prompts:0',
-            'output': 'images'
-        },
-        params={
-            'width': 512,
-            'height': 512,
-            'n': 2,
-            'model': 'flux-hyp8-Q8_0'
-        }
-    ))
-        
+        params={'template': IMAGE_TEMPLATE }
+    ))    
+    # await cascade.step(StepConsoleSink(name='console_sink', streams={'input': 'image_prompts:0'}))
+    for image_model in ['flux1-schnell-q4_k','flux-hyp8-Q8_0']:
+        await cascade.step(StepText2Image(
+            name='generate_image',
+            streams={'input': 'image_prompts:0', 'output': 'images'},
+            params={
+                'width': 512,
+                'height': 512,
+                'n': 2,
+                'model': image_model
+            }
+        ))
+    
+    # Output .png and .json
     await cascade.step(StepJSONSink(
         name='export_json',
-        streams={
-            'input': 'images:1'
-        },
-        params={
-            'output_dir': 'output/logos'
-        }
+        streams={ 'input': 'images:0' },
+        params={ 'output_dir': 'output/logos' }
     ))
     
     # Run pipeline
