@@ -48,6 +48,10 @@ class InternalTokenizer:
         return self.fn(system, user, assistant)
 
 tokenizer_internal = {
+    'internal:raw': InternalTokenizer('raw', lambda system, user, assistant:
+f"""{system}
+{user}{assistant}"""),
+        
     'internal:vicuna': InternalTokenizer('vicuna', lambda system, user, assistant:
 f"""SYSTEM: {system}
 

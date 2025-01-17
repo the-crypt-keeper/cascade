@@ -429,13 +429,14 @@ class StepJSONSink(SinkStep):
         """Write JSON file containing full cascade history and save images"""
         # Get the full cascade history
         history = await self.manager.unroll(msg)
+        print('sink', history)
         
         # Generate base filename using MD5 hash
         base_hash = self._make_filename(msg.cascade_id).replace('.json', '')
         
         # Save any images to PNG files
         for step, data in history.items():
-            if 'image' in data:
+            if isinstance(data, dict) and 'image' in data:
                 # Save image data to PNG file
                 image_filename = f"{base_hash}_{step}.png"
                 image_path = self.output_dir / image_filename
